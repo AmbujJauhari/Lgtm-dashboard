@@ -1,5 +1,5 @@
 {
-  "uid": "[=folder_uid]-service-overview",
+  "uid": "[=folder_uid]-sov",
   "title": "Service Overview",
   "description": "Tier 2 — component dashboard. Choose a service from the dropdown. JVM and Server rows start collapsed — expand as needed.",
   "tags": ["collops", "component", "tier2"],
@@ -11,7 +11,7 @@
   "links": [
     {
       "title": "Investigate",
-      "url": "/d/[=folder_uid]-investigation?var-service_name=$service_name&${__url_time_range}",
+      "url": "/d/[=folder_uid]-inv?var-service_name=$service_name&${__url_time_range}",
       "type": "link",
       "icon": "external link",
       "tooltip": "Open Investigation dashboard — correlate logs, metrics and traces",
@@ -21,7 +21,7 @@
     },
     {
       "title": "CollOps Overview",
-      "url": "/d/[=folder_uid]-overview",
+      "url": "/d/[=folder_uid]-ov",
       "type": "link",
       "icon": "arrow-left",
       "tooltip": "Back to fleet overview",
@@ -100,7 +100,7 @@
       "gridPos": { "x": 0, "y": 1, "w": 24, "h": 9 },
       "type": "timeseries",
       "title": "[Component] RED metrics",
-      "libraryPanel": { "uid": "collops-cmp-red-metrics", "name": "[Component] RED metrics" },
+      "libraryPanel": { "uid": "[=folder_uid]-rm", "name": "[Component] RED metrics" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -117,7 +117,7 @@
       "gridPos": { "x": 0, "y": 11, "w": 24, "h": 9 },
       "type": "timeseries",
       "title": "[Component] Outbound HTTP calls",
-      "libraryPanel": { "uid": "collops-cmp-outbound-http", "name": "[Component] Outbound HTTP calls" },
+      "libraryPanel": { "uid": "[=folder_uid]-oh", "name": "[Component] Outbound HTTP calls" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -133,7 +133,7 @@
           "gridPos": { "x": 0, "y": 21, "w": 16, "h": 9 },
           "type": "timeseries",
           "title": "[Component] JVM memory pools",
-          "libraryPanel": { "uid": "collops-cmp-jvm-heap-gc", "name": "[Component] JVM memory pools" },
+          "libraryPanel": { "uid": "[=folder_uid]-jhgc", "name": "[Component] JVM memory pools" },
           "fieldConfig": { "defaults": {}, "overrides": [] },
           "options": {}
         },
@@ -142,7 +142,7 @@
           "gridPos": { "x": 16, "y": 21, "w": 8, "h": 9 },
           "type": "timeseries",
           "title": "[Component] JVM GC",
-          "libraryPanel": { "uid": "collops-cmp-jvm-gc", "name": "[Component] JVM GC" },
+          "libraryPanel": { "uid": "[=folder_uid]-jgc", "name": "[Component] JVM GC" },
           "fieldConfig": { "defaults": {}, "overrides": [] },
           "options": {}
         },
@@ -151,7 +151,7 @@
           "gridPos": { "x": 0, "y": 30, "w": 24, "h": 8 },
           "type": "timeseries",
           "title": "[Component] CPU & threads",
-          "libraryPanel": { "uid": "collops-cmp-thread-count", "name": "[Component] CPU & threads" },
+          "libraryPanel": { "uid": "[=folder_uid]-tc", "name": "[Component] CPU & threads" },
           "fieldConfig": { "defaults": {}, "overrides": [] },
           "options": {}
         }
@@ -319,7 +319,7 @@
       "gridPos": { "x": 0, "y": 23, "w": 24, "h": 10 },
       "type": "logs",
       "title": "[Component] Log stream",
-      "libraryPanel": { "uid": "collops-cmp-log-stream", "name": "[Component] Log stream" },
+      "libraryPanel": { "uid": "[=folder_uid]-ls", "name": "[Component] Log stream" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     }

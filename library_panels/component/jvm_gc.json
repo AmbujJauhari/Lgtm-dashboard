@@ -1,5 +1,5 @@
 {
-  "uid": "collops-cmp-jvm-gc",
+  "uid": "jgc",
   "name": "[Component] JVM GC",
   "kind": 1,
   "model": {

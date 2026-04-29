@@ -79,9 +79,9 @@ public class RollbackRunner implements ApplicationRunner, ExitCodeGenerator {
         String envFolderUid = slug(team) + "-" + slug(serviceGroup) + "-" + slug(env);
 
         List<String> dashboardUids = List.of(
-                envFolderUid + "-overview",
-                envFolderUid + "-service-overview",
-                envFolderUid + "-investigation"
+                envFolderUid + "-ov",
+                envFolderUid + "-sov",
+                envFolderUid + "-inv"
         );
 
         String token = sg.getGrafanaTokenEnv() != null ? System.getenv(sg.getGrafanaTokenEnv()) : null;

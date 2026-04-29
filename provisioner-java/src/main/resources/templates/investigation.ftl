@@ -1,5 +1,5 @@
 {
-  "uid": "[=folder_uid]-investigation",
+  "uid": "[=folder_uid]-inv",
   "title": "Investigation",
   "description": "Tier 3 — correlate logs, metrics and traces for any CollOps service. Exemplar dots on the metrics panel link to traces in Tempo. TraceId values in the log panel also link to Tempo.",
   "tags": ["collops", "investigation", "tier3"],
@@ -11,7 +11,7 @@
   "links": [
     {
       "title": "CollOps Overview",
-      "url": "/d/[=folder_uid]-overview",
+      "url": "/d/[=folder_uid]-ov",
       "type": "link",
       "icon": "arrow-left",
       "tooltip": "Back to fleet overview",

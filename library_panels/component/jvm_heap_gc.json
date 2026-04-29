@@ -1,5 +1,5 @@
 {
-  "uid": "collops-cmp-jvm-heap-gc",
+  "uid": "jhgc",
   "name": "[Component] JVM memory pools",
   "kind": 1,
   "model": {

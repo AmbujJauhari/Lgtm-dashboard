@@ -1,5 +1,5 @@
 {
-  "uid": "[=folder_uid]-overview",
+  "uid": "[=folder_uid]-ov",
   "title": "CollOps Overview",
   "description": "Tier 1 — aggregate view. Click any service to drill into its component dashboard.",
   "tags": ["collops", "aggregate", "tier1"],
@@ -50,7 +50,7 @@
           "links": [
             {
               "title": "Open ${__series.name} dashboard",
-              "url": "/d/[=folder_uid]-service-overview?var-service_name=${__series.name}&${__url_time_range}",
+              "url": "/d/[=folder_uid]-sov?var-service_name=${__series.name}&${__url_time_range}",
               "targetBlank": false
             }
           ]
@@ -84,7 +84,7 @@
           "links": [
             {
               "title": "Open service dashboard",
-              "url": "/d/[=folder_uid]-service-overview?var-service_name=${__data.fields.service_name}&${__url_time_range}",
+              "url": "/d/[=folder_uid]-sov?var-service_name=${__data.fields.service_name}&${__url_time_range}",
               "targetBlank": false
             }
           ]
@@ -130,7 +130,7 @@
           "links": [
             {
               "title": "Open ${__series.name} dashboard",
-              "url": "/d/[=folder_uid]-service-overview?var-service_name=${__series.name}&${__url_time_range}",
+              "url": "/d/[=folder_uid]-sov?var-service_name=${__series.name}&${__url_time_range}",
               "targetBlank": false
             }
           ]
@@ -165,7 +165,7 @@
           "links": [
             {
               "title": "Open service dashboard",
-              "url": "/d/[=folder_uid]-service-overview?var-service_name=${__data.fields.service_name}&${__url_time_range}",
+              "url": "/d/[=folder_uid]-sov?var-service_name=${__data.fields.service_name}&${__url_time_range}",
               "targetBlank": false
             }
           ]

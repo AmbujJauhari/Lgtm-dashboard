@@ -1,5 +1,5 @@
 {
-  "uid": "collops-cmp-thread-count",
+  "uid": "tc",
   "name": "[Component] CPU & threads",
   "kind": 1,
   "model": {
