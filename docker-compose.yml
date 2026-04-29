@@ -46,7 +46,7 @@ services:
 
   test-data-generator:
     build:
-      context: ./test_data
+      context: ./test-data-java
       dockerfile: Dockerfile
     container_name: collops-test-data
     environment:
