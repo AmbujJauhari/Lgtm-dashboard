@@ -44,7 +44,6 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
     );
 
     private static final List<String> LIBRARY_PANEL_FILES = List.of(
-            "aggregate/service_health.json",
             "component/red_metrics.json",
             "component/outbound_http.json",
             "component/jvm_heap_gc.json",
@@ -133,10 +132,6 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
 
         for (String panelFile : LIBRARY_PANEL_FILES) {
             Path path = Path.of("library_panels", panelFile);
-            if (!Files.exists(path)) {
-                log.warn("Library panel file not found, skipping: {}", path);
-                continue;
-            }
             String raw        = Files.readString(path);
             String namespaced = namespacePanelUid(envFolderUid, raw);
             String json       = injectDatasource(namespaced, mimirUid, lokiUid, tempoUid, appSelectorJsonEscaped);
