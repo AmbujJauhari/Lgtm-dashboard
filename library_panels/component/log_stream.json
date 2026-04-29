@@ -1,0 +1,33 @@
+{
+  "uid": "collops-cmp-log-stream",
+  "name": "[Component] Log stream",
+  "kind": 1,
+  "model": {
+    "type": "logs",
+    "title": "[Component] Log stream",
+    "description": "Live log tail for the selected service and instance. Click a traceId to open the trace in Tempo.",
+    "datasource": { "type": "loki", "uid": "__LOKI__" },
+    "targets": [
+      {
+        "datasource": { "type": "loki", "uid": "__LOKI__" },
+        "expr": "{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\"}",
+        "queryType": "range",
+        "refId": "A"
+      }
+    ],
+    "options": {
+      "showTime": true,
+      "showLabels": false,
+      "showCommonLabels": false,
+      "wrapLogMessage": true,
+      "prettifyLogMessage": true,
+      "enableLogDetails": true,
+      "dedupStrategy": "none",
+      "sortOrder": "Descending"
+    },
+    "fieldConfig": {
+      "defaults": {},
+      "overrides": []
+    }
+  }
+}

@@ -1,0 +1,60 @@
+# Single grafana/otel-lgtm image bundles Grafana, Loki, Tempo, Prometheus,
+# and the OpenTelemetry Collector — no separate service configs needed.
+
+networks:
+  lgtm:
+    driver: bridge
+
+volumes:
+  lgtm_data:
+
+services:
+
+  lgtm:
+    image: grafana/otel-lgtm:latest
+    container_name: collops-lgtm
+    ports:
+      - "3001:3000"   # Grafana UI  (admin / admin) — port 3000 taken by Docker Desktop on Windows
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "9090:9090"   # Prometheus  (optional direct access)
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_FEATURE_TOGGLES_ENABLE=nestedFolders
+    volumes:
+      - lgtm_data:/data
+    networks:
+      - lgtm
+    restart: unless-stopped
+
+  provisioner:
+    build:
+      context: ./provisioner-java
+      dockerfile: Dockerfile
+    container_name: collops-provisioner
+    working_dir: /workspace
+    volumes:
+      - .:/workspace   # mount repo root — provisioner reads templates/library_panels/config from here
+    networks:
+      - lgtm
+    depends_on:
+      lgtm:
+        condition: service_healthy
+    profiles:
+      - tools           # not started by `docker compose up -d`; use `docker compose run`
+
+  test-data-generator:
+    build:
+      context: ./test_data
+      dockerfile: Dockerfile
+    container_name: collops-test-data
+    environment:
+      - OTLP_ENDPOINT=http://lgtm:4317
+      - LOKI_ENDPOINT=http://lgtm:3100
+    networks:
+      - lgtm
+    depends_on:
+      lgtm:
+        condition: service_healthy
+    restart: unless-stopped

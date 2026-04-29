@@ -1,0 +1,62 @@
+{
+  "uid": "collops-cmp-jvm-gc",
+  "name": "[Component] JVM GC",
+  "kind": 1,
+  "model": {
+    "type": "timeseries",
+    "title": "[Component] JVM GC",
+    "description": "GC pause time p99 by collector (Young/Old). Right axis shows GC overhead — the fraction of wall-clock time spent in GC. High overhead (>5%) indicates memory pressure.",
+    "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+    "targets": [
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "histogram_quantile(0.99, sum by (jvm_gc_name, le) (rate(jvm_gc_duration_seconds_bucket{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\"}[$__rate_interval])))",
+        "legendFormat": "p99 pause: {{jvm_gc_name}}",
+        "refId": "A"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "histogram_quantile(0.50, sum by (jvm_gc_name, le) (rate(jvm_gc_duration_seconds_bucket{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\"}[$__rate_interval])))",
+        "legendFormat": "p50 pause: {{jvm_gc_name}}",
+        "refId": "B"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "sum(rate(jvm_gc_duration_seconds_sum{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\"}[$__rate_interval]))",
+        "legendFormat": "GC overhead (fraction)",
+        "refId": "C"
+      }
+    ],
+    "options": {
+      "tooltip": { "mode": "multi", "sort": "desc" },
+      "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }
+    },
+    "fieldConfig": {
+      "defaults": {
+        "unit": "s",
+        "color": { "mode": "palette-classic" },
+        "custom": { "lineWidth": 2, "fillOpacity": 8, "showPoints": "never" }
+      },
+      "overrides": [
+        {
+          "matcher": { "id": "byName", "options": "GC overhead (fraction)" },
+          "properties": [
+            { "id": "unit", "value": "percentunit" },
+            { "id": "custom.axisPlacement", "value": "right" },
+            { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } },
+            { "id": "custom.fillOpacity", "value": 20 },
+            { "id": "thresholds", "value": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 0.05 },
+                  { "color": "red", "value": 0.15 }
+                ]
+            }},
+            { "id": "custom.thresholdsStyle", "value": { "mode": "line" } }
+          ]
+        }
+      ]
+    }
+  }
+}

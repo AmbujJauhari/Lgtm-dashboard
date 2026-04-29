@@ -1,0 +1,19 @@
+team: CollOps
+env: qa
+
+# To look up datasource UIDs: curl https://grafana.qa.internal/api/datasources -H "Authorization: Bearer $GRAFANA_TOKEN_QA" | jq '.[] | {name,uid}'
+x-grafana: &grafana
+  grafana_url: https://grafana.qa.internal
+  grafana_token_env: GRAFANA_TOKEN_QA
+  datasources:
+    mimir: REPLACE_WITH_QA_MIMIR_UID
+    loki: REPLACE_WITH_QA_LOKI_UID
+    tempo: REPLACE_WITH_QA_TEMPO_UID
+
+service_groups:
+  app:
+    <<: *grafana
+    thresholds:
+      error_rate_warning: 0.05
+      error_rate_critical: 0.10
+      latency_p99_ms: 500

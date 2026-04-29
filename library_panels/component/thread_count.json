@@ -1,0 +1,79 @@
+{
+  "uid": "collops-cmp-thread-count",
+  "name": "[Component] CPU & threads",
+  "kind": 1,
+  "model": {
+    "type": "timeseries",
+    "title": "[Component] CPU & threads",
+    "description": "Process CPU utilization and JVM thread counts. High blocked/waiting thread counts alongside high CPU can indicate lock contention.",
+    "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+    "targets": [
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "jvm_cpu_recent_utilization_ratio{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\"}",
+        "legendFormat": "Process CPU %",
+        "refId": "A"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "jvm_threads_live{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\"}",
+        "legendFormat": "Live threads",
+        "refId": "B"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "jvm_thread_count{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\",jvm_thread_state=\"blocked\"}",
+        "legendFormat": "Blocked threads",
+        "refId": "C"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "jvm_thread_count{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\",jvm_thread_state=\"waiting\"}",
+        "legendFormat": "Waiting threads",
+        "refId": "D"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "jvm_threads_peak{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\"}",
+        "legendFormat": "Peak threads",
+        "refId": "E"
+      }
+    ],
+    "options": {
+      "tooltip": { "mode": "multi", "sort": "desc" },
+      "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }
+    },
+    "fieldConfig": {
+      "defaults": {
+        "unit": "short",
+        "color": { "mode": "palette-classic" },
+        "custom": { "lineWidth": 2, "fillOpacity": 8, "showPoints": "never" }
+      },
+      "overrides": [
+        {
+          "matcher": { "id": "byName", "options": "Process CPU %" },
+          "properties": [
+            { "id": "unit", "value": "percentunit" },
+            { "id": "custom.axisPlacement", "value": "right" },
+            { "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } },
+            { "id": "thresholds", "value": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 0.7 },
+                  { "color": "red", "value": 0.9 }
+                ]
+            }},
+            { "id": "custom.thresholdsStyle", "value": { "mode": "line" } }
+          ]
+        },
+        {
+          "matcher": { "id": "byName", "options": "Blocked threads" },
+          "properties": [
+            { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+          ]
+        }
+      ]
+    }
+  }
+}

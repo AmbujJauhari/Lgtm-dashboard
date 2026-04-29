@@ -1,0 +1,17 @@
+spring:
+  main:
+    web-application-type: none
+    banner-mode: off
+  freemarker:
+    # Square-bracket tags: [=folder_uid] instead of ${folder_uid}.
+    # This leaves Grafana's own ${__series.name} and {{label}} syntax completely untouched.
+    settings:
+      tag_syntax: square_bracket
+      interpolation_syntax: square_bracket
+    suffix: .ftl
+    template-loader-path: classpath:/templates/
+
+logging:
+  level:
+    root: WARN
+    com.collops.provisioner: INFO

@@ -1,0 +1,59 @@
+{
+  "uid": "collops-agg-error-budget",
+  "name": "[Aggregate] Error rate per service",
+  "kind": 1,
+  "model": {
+    "type": "table",
+    "title": "[Aggregate] Error rate per service",
+    "description": "Current HTTP 5xx error rate % per service. SLO target: <1%. Click a row to open that service's dashboard.",
+    "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+    "targets": [
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "100 * sum by (service_name) (rate(http_server_request_duration_seconds_count{appCode=\"CollOps\",http_response_status_code=~\"5..\"}[$__rate_interval])) / sum by (service_name) (rate(http_server_request_duration_seconds_count{appCode=\"CollOps\"}[$__rate_interval]))",
+        "legendFormat": "{{service_name}}",
+        "refId": "A",
+        "instant": true,
+        "format": "table"
+      }
+    ],
+    "options": {
+      "footer": { "show": false },
+      "sortBy": [{ "displayName": "Error rate %", "desc": true }]
+    },
+    "fieldConfig": {
+      "defaults": {
+        "unit": "percent",
+        "custom": { "align": "auto", "displayMode": "auto" },
+        "links": [
+          {
+            "title": "Open ${__data.fields.service_name} dashboard",
+            "url": "/d/collops-${__data.fields.service_name}-overview?var-service_name=${__data.fields.service_name}&${__url_time_range}",
+            "targetBlank": false
+          }
+        ],
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "red", "value": 5 }
+          ]
+        }
+      },
+      "overrides": [
+        {
+          "matcher": { "id": "byName", "options": "Value" },
+          "properties": [
+            { "id": "displayName", "value": "Error rate %" },
+            { "id": "custom.displayMode", "value": "color-background" }
+          ]
+        },
+        {
+          "matcher": { "id": "byName", "options": "service_name" },
+          "properties": [{ "id": "displayName", "value": "Service" }]
+        }
+      ]
+    }
+  }
+}

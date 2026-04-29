@@ -1,0 +1,18 @@
+team: CollOps
+env: nonprod
+
+x-grafana: &grafana
+  grafana_url: https://grafana.nonprod.internal
+  grafana_token_env: GRAFANA_TOKEN_NONPROD
+  datasources:
+    mimir: REPLACE_WITH_NONPROD_MIMIR_UID
+    loki: REPLACE_WITH_NONPROD_LOKI_UID
+    tempo: REPLACE_WITH_NONPROD_TEMPO_UID
+
+service_groups:
+  app:
+    <<: *grafana
+    thresholds:
+      error_rate_warning: 0.05
+      error_rate_critical: 0.10
+      latency_p99_ms: 500

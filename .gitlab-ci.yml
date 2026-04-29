@@ -1,0 +1,71 @@
+stages:
+  - build
+  - deploy-qa
+  - promote-uat
+  - promote-prod
+
+# Build the fat JAR once; all subsequent stages reuse the artifact.
+build-provisioner:
+  stage: build
+  image: maven:3.9-eclipse-temurin-21
+  script:
+    - cd provisioner-java && mvn package -q -DskipTests
+  artifacts:
+    paths:
+      - provisioner-java/target/provisioner-*.jar
+    expire_in: 1 hour
+  only:
+    - main
+
+# Helper: run the provisioner JAR from the repo root so it can find library_panels/ and config/.
+.deploy: &deploy
+  image: eclipse-temurin:21-jre-alpine
+  needs: [build-provisioner]
+  only: [main]
+
+# Auto-deploys to QA on every push to main.
+# Requires GRAFANA_TOKEN_QA to be set as a masked CI variable.
+deploy-qa:
+  <<: *deploy
+  stage: deploy-qa
+  when: on_success
+  script:
+    - java -jar provisioner-java/target/provisioner-*.jar deploy --config=config/qa.yaml
+  environment: qa
+
+# Manual promote to UAT.
+# Requires GRAFANA_TOKEN_UAT to be set as a masked CI variable.
+promote-uat:
+  <<: *deploy
+  stage: promote-uat
+  when: manual
+  script:
+    - java -jar provisioner-java/target/provisioner-*.jar deploy --config=config/uat.yaml
+  environment: uat
+
+# Manual promote to prod. Optional dependency on UAT — safe to run independently.
+# Requires GRAFANA_TOKEN_PROD to be set as a masked CI variable.
+promote-prod:
+  <<: *deploy
+  stage: promote-prod
+  needs:
+    - build-provisioner
+    - job: promote-uat
+      optional: true
+  when: manual
+  script:
+    - java -jar provisioner-java/target/provisioner-*.jar deploy --config=config/prod.yaml
+  environment: production
+
+# Emergency rollback for prod. Set ROLLBACK_SERVICE_GROUP and ROLLBACK_VERSION as
+# pipeline variables before triggering.
+# To list available versions: GET /api/dashboards/uid/{uid}/versions
+# Requires GRAFANA_TOKEN_PROD to be set as a masked CI variable.
+rollback-prod:
+  <<: *deploy
+  stage: promote-prod
+  needs: [build-provisioner]
+  when: manual
+  script:
+    - java -jar provisioner-java/target/provisioner-*.jar rollback --config=config/prod.yaml --service-group=$ROLLBACK_SERVICE_GROUP --version=$ROLLBACK_VERSION
+  environment: production

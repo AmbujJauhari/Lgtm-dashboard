@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Secrets
+.env
+
+# Maven build output
+target/
+
+# IDE
+.idea/
+
+# Claude session data
+.claude/

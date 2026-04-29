@@ -1,0 +1,65 @@
+{
+  "uid": "collops-agg-top-slowest",
+  "name": "[Aggregate] Top slowest services",
+  "kind": 1,
+  "model": {
+    "type": "table",
+    "title": "[Aggregate] Top slowest services (p99 latency)",
+    "description": "p99 HTTP request latency per service, sorted descending. Click a row to open that service's dashboard.",
+    "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+    "targets": [
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "sort_desc(histogram_quantile(0.99, sum by (service_name, le) (rate(http_server_request_duration_seconds_bucket{appCode=\"CollOps\"}[$__rate_interval]))))",
+        "legendFormat": "{{service_name}}",
+        "refId": "A",
+        "instant": true,
+        "format": "table"
+      }
+    ],
+    "options": {
+      "footer": { "show": false },
+      "sortBy": [{ "displayName": "Value", "desc": true }]
+    },
+    "fieldConfig": {
+      "defaults": {
+        "unit": "s",
+        "custom": {
+          "align": "auto",
+          "displayMode": "auto",
+          "inspect": false
+        },
+        "links": [
+          {
+            "title": "Open ${__data.fields.service_name} dashboard",
+            "url": "/d/collops-${__data.fields.service_name}-overview?var-service_name=${__data.fields.service_name}&${__url_time_range}",
+            "targetBlank": false
+          }
+        ],
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.5 },
+            { "color": "red", "value": 1 }
+          ]
+        }
+      },
+      "overrides": [
+        {
+          "matcher": { "id": "byName", "options": "Value" },
+          "properties": [
+            { "id": "displayName", "value": "p99 latency" },
+            { "id": "custom.displayMode", "value": "color-background" }
+          ]
+        },
+        {
+          "matcher": { "id": "byName", "options": "service_name" },
+          "properties": [
+            { "id": "displayName", "value": "Service" }
+          ]
+        }
+      ]
+    }
+  }
+}

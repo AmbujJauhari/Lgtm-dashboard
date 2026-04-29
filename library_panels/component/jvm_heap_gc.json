@@ -1,0 +1,57 @@
+{
+  "uid": "collops-cmp-jvm-heap-gc",
+  "name": "[Component] JVM memory pools",
+  "kind": 1,
+  "model": {
+    "type": "timeseries",
+    "title": "[Component] JVM memory pools",
+    "description": "Heap pools (Eden, Survivor, Old Gen) and non-heap pools (Metaspace, Code Cache). Dashed lines show committed (reserved) memory.",
+    "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+    "targets": [
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "jvm_memory_used_bytes{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\",jvm_memory_type=\"heap\"}",
+        "legendFormat": "heap: {{jvm_memory_pool_name}}",
+        "refId": "A"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "jvm_memory_committed_bytes{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\",jvm_memory_type=\"heap\"}",
+        "legendFormat": "committed: {{jvm_memory_pool_name}}",
+        "refId": "B"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "jvm_memory_used_bytes{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\",jvm_memory_type=\"non_heap\"}",
+        "legendFormat": "non-heap: {{jvm_memory_pool_name}}",
+        "refId": "C"
+      }
+    ],
+    "options": {
+      "tooltip": { "mode": "multi", "sort": "desc" },
+      "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "max"] }
+    },
+    "fieldConfig": {
+      "defaults": {
+        "unit": "bytes",
+        "color": { "mode": "palette-classic" },
+        "custom": { "lineWidth": 2, "fillOpacity": 8, "showPoints": "never" }
+      },
+      "overrides": [
+        {
+          "matcher": { "id": "byRegexp", "options": "committed:.*" },
+          "properties": [
+            { "id": "custom.lineStyle", "value": { "dash": [8, 8], "fill": "dash" } },
+            { "id": "custom.fillOpacity", "value": 0 }
+          ]
+        },
+        {
+          "matcher": { "id": "byRegexp", "options": "non-heap:.*" },
+          "properties": [
+            { "id": "custom.axisPlacement", "value": "right" }
+          ]
+        }
+      ]
+    }
+  }
+}

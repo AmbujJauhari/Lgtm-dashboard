@@ -1,0 +1,45 @@
+{
+  "uid": "collops-agg-exception-count",
+  "name": "[Aggregate] Exception count per component",
+  "kind": 1,
+  "model": {
+    "type": "barchart",
+    "title": "[Aggregate] Exception count per component",
+    "description": "Total exceptions per service in the selected time range. Click a bar to open that service's dashboard.",
+    "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+    "targets": [
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "sort_desc(sum by (service_name) (increase(process_exceptions_total{appCode=\"CollOps\"}[$__range])))",
+        "legendFormat": "{{service_name}}",
+        "refId": "A",
+        "instant": true
+      }
+    ],
+    "options": {
+      "orientation": "horizontal",
+      "barWidth": 0.7,
+      "groupWidth": 0.7,
+      "fillOpacity": 80,
+      "legend": { "displayMode": "hidden", "placement": "bottom" },
+      "tooltip": { "mode": "single", "sort": "none" },
+      "xTickLabelRotation": 0,
+      "xTickLabelSpacing": 0
+    },
+    "fieldConfig": {
+      "defaults": {
+        "unit": "short",
+        "color": { "mode": "fixed", "fixedColor": "orange" },
+        "custom": { "fillOpacity": 80 },
+        "links": [
+          {
+            "title": "Open ${__series.name} dashboard",
+            "url": "/d/collops-${__series.name}-overview?var-service_name=${__series.name}&${__url_time_range}",
+            "targetBlank": false
+          }
+        ]
+      },
+      "overrides": []
+    }
+  }
+}

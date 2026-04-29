@@ -1,0 +1,61 @@
+{
+  "uid": "collops-cmp-outbound-http",
+  "name": "[Component] Outbound HTTP calls",
+  "kind": 1,
+  "model": {
+    "type": "timeseries",
+    "title": "[Component] Outbound HTTP calls",
+    "description": "HTTP client calls made by this service to downstream dependencies. Auto-instrumented by the OTel Java agent for Apache HttpClient, OkHttp, and Spring RestTemplate.",
+    "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+    "targets": [
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "sum by (server_address) (rate(http_client_request_duration_seconds_count{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\"}[$__rate_interval]))",
+        "legendFormat": "req/s → {{server_address}}",
+        "refId": "A"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "sum by (server_address) (rate(http_client_request_duration_seconds_count{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\",http_response_status_code=~\"5..\"}[$__rate_interval]))",
+        "legendFormat": "errors/s → {{server_address}}",
+        "refId": "B"
+      },
+      {
+        "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
+        "expr": "histogram_quantile(0.99, sum by (server_address, le) (rate(http_client_request_duration_seconds_bucket{__APP_SELECTOR__,service_name=\"$service_name\",instance=~\"$instance\"}[$__rate_interval])))",
+        "legendFormat": "p99 → {{server_address}}",
+        "refId": "C"
+      }
+    ],
+    "options": {
+      "tooltip": { "mode": "multi", "sort": "desc" },
+      "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["lastNotNull", "mean", "max"] }
+    },
+    "fieldConfig": {
+      "defaults": {
+        "color": { "mode": "palette-classic" },
+        "custom": { "lineWidth": 2, "fillOpacity": 8, "showPoints": "never" }
+      },
+      "overrides": [
+        {
+          "matcher": { "id": "byRegexp", "options": "errors/s.*" },
+          "properties": [
+            { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } },
+            { "id": "unit", "value": "reqps" }
+          ]
+        },
+        {
+          "matcher": { "id": "byRegexp", "options": "req/s.*" },
+          "properties": [{ "id": "unit", "value": "reqps" }]
+        },
+        {
+          "matcher": { "id": "byRegexp", "options": "p99.*" },
+          "properties": [
+            { "id": "unit", "value": "s" },
+            { "id": "custom.axisPlacement", "value": "right" }
+          ]
+        }
+      ]
+    }
+  }
+}
