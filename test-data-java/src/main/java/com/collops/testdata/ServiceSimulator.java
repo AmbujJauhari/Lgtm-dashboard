@@ -344,7 +344,7 @@ public class ServiceSimulator {
             labels.put("service_group","app");
             labels.put("service_name", serviceName);
             labels.put("instance",     instance);
-            labels.put("level",        level);
+            labels.put("severity_text", level);
 
             ArrayNode values = stream.putArray("values");
             ArrayNode entry  = values.addArray();
