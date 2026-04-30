@@ -97,7 +97,8 @@ public class GrafanaClient {
             if (patchRes.statusCode() != 200) {
                 throw new GrafanaException(patchRes.statusCode(), patchRes.body());
             }
-            log.info("Updated library panel '{}'", name);
+            String storedUid = mapper.readTree(patchRes.body()).path("result").path("uid").asText();
+            log.info("Updated library panel '{}' uid={}", name, storedUid);
         } else if (res.statusCode() == 404) {
             body.put("uid", uid);
             HttpRequest post = request("POST", "/api/library-elements",
@@ -106,7 +107,8 @@ public class GrafanaClient {
             if (postRes.statusCode() != 200) {
                 throw new GrafanaException(postRes.statusCode(), postRes.body());
             }
-            log.info("Created library panel '{}'", name);
+            String storedUid = mapper.readTree(postRes.body()).path("result").path("uid").asText();
+            log.info("Created library panel '{}' uid={}", name, storedUid);
         } else {
             throw new GrafanaException(res.statusCode(), res.body());
         }

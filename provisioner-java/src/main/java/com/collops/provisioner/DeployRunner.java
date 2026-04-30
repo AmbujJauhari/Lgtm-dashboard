@@ -49,7 +49,11 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
             "component/jvm_heap_gc.json",
             "component/jvm_gc.json",
             "component/thread_count.json",
-            "component/log_stream.json"
+            "component/log_stream.json",
+            "aggregate/health_heatmap.json",
+            "aggregate/exception_count.json",
+            "aggregate/top_slowest.json",
+            "aggregate/error_budget.json"
     );
 
     private static final String MIMIR_PLACEHOLDER        = "__MIMIR__";
@@ -134,9 +138,14 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
             Path path = Path.of("library_panels", panelFile);
             String raw        = Files.readString(path);
             String namespaced = namespacePanelUid(envFolderUid, raw);
-            String json       = injectDatasource(namespaced, mimirUid, lokiUid, tempoUid, appSelectorJsonEscaped);
+            String json       = injectDatasource(namespaced, mimirUid, lokiUid, tempoUid, appSelectorJsonEscaped)
+                                    .replace("__FOLDER_UID__", envFolderUid);
             client.upsertLibraryPanel(envFolderUid, json);
         }
+
+        // Library element writes are occasionally not visible to the dashboard save
+        // endpoint immediately on this Grafana build; a brief pause avoids the race.
+        Thread.sleep(1000);
 
         Map<String, Object> model = new HashMap<>();
         model.put("folder_uid",   envFolderUid);

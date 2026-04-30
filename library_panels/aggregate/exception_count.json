@@ -1,5 +1,5 @@
 {
-  "uid": "collops-agg-exception-count",
+  "uid": "ec",
   "name": "[Aggregate] Exception count per component",
   "kind": 1,
   "model": {
@@ -10,7 +10,7 @@
     "targets": [
       {
         "datasource": { "type": "prometheus", "uid": "__MIMIR__" },
-        "expr": "sort_desc(sum by (service_name) (increase(process_exceptions_total{appCode=\"CollOps\"}[$__range])))",
+        "expr": "sort_desc(sum by (service_name) (increase(process_exceptions_total{__APP_SELECTOR__}[$__range])))",
         "legendFormat": "{{service_name}}",
         "refId": "A",
         "instant": true
@@ -34,7 +34,7 @@
         "links": [
           {
             "title": "Open ${__series.name} dashboard",
-            "url": "/d/collops-${__series.name}-overview?var-service_name=${__series.name}&${__url_time_range}",
+            "url": "/d/__FOLDER_UID__-sov?var-service_name=${__series.name}&${__url_time_range}",
             "targetBlank": false
           }
         ]
