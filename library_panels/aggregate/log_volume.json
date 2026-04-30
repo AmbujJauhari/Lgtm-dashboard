@@ -10,37 +10,9 @@
     "targets": [
       {
         "datasource": { "type": "loki", "uid": "__LOKI__" },
-        "expr": "sum by (service_name) (count_over_time({__APP_SELECTOR__,severity_text=\"FATAL\"}[$__range]))",
-        "legendFormat": "{{service_name}}",
-        "refId": "FATAL",
-        "queryType": "instant"
-      },
-      {
-        "datasource": { "type": "loki", "uid": "__LOKI__" },
-        "expr": "sum by (service_name) (count_over_time({__APP_SELECTOR__,severity_text=\"ERROR\"}[$__range]))",
-        "legendFormat": "{{service_name}}",
-        "refId": "ERROR",
-        "queryType": "instant"
-      },
-      {
-        "datasource": { "type": "loki", "uid": "__LOKI__" },
-        "expr": "sum by (service_name) (count_over_time({__APP_SELECTOR__,severity_text=\"WARN\"}[$__range]))",
-        "legendFormat": "{{service_name}}",
-        "refId": "WARN",
-        "queryType": "instant"
-      },
-      {
-        "datasource": { "type": "loki", "uid": "__LOKI__" },
-        "expr": "sum by (service_name) (count_over_time({__APP_SELECTOR__,severity_text=\"INFO\"}[$__range]))",
-        "legendFormat": "{{service_name}}",
-        "refId": "INFO",
-        "queryType": "instant"
-      },
-      {
-        "datasource": { "type": "loki", "uid": "__LOKI__" },
-        "expr": "sum by (service_name) (count_over_time({__APP_SELECTOR__,severity_text=\"DEBUG\"}[$__range]))",
-        "legendFormat": "{{service_name}}",
-        "refId": "DEBUG",
+        "expr": "sum by (service_name, severity_text) (count_over_time({__APP_SELECTOR__}[$__range]))",
+        "legendFormat": "{{severity_text}}",
+        "refId": "A",
         "queryType": "instant"
       }
     ],
@@ -50,30 +22,30 @@
       "fillOpacity": 80,
       "groupWidth": 0.7,
       "barWidth": 0.97,
-      "legend": { "displayMode": "hidden" },
+      "legend": { "displayMode": "list", "placement": "bottom" },
       "tooltip": { "mode": "multi", "sort": "desc" }
     },
     "fieldConfig": {
       "defaults": { "unit": "short" },
       "overrides": [
         {
-          "matcher": { "id": "byFrameRefID", "options": "FATAL" },
+          "matcher": { "id": "byName", "options": "FATAL" },
           "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#7B000B" } }]
         },
         {
-          "matcher": { "id": "byFrameRefID", "options": "ERROR" },
+          "matcher": { "id": "byName", "options": "ERROR" },
           "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#F2495C" } }]
         },
         {
-          "matcher": { "id": "byFrameRefID", "options": "WARN" },
+          "matcher": { "id": "byName", "options": "WARN" },
           "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#FF9830" } }]
         },
         {
-          "matcher": { "id": "byFrameRefID", "options": "INFO" },
+          "matcher": { "id": "byName", "options": "INFO" },
           "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#73BF69" } }]
         },
         {
-          "matcher": { "id": "byFrameRefID", "options": "DEBUG" },
+          "matcher": { "id": "byName", "options": "DEBUG" },
           "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#5794F2" } }]
         }
       ]
