@@ -53,7 +53,8 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
             "aggregate/health_heatmap.json",
             "aggregate/exception_count.json",
             "aggregate/top_slowest.json",
-            "aggregate/error_budget.json"
+            "aggregate/error_budget.json",
+            "aggregate/log_volume.json"
     );
 
     private static final String MIMIR_PLACEHOLDER        = "__MIMIR__";

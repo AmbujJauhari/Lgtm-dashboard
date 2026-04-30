@@ -64,16 +64,33 @@
       "options": {}
     },
     {
-      "id": 12,
+      "id": 13,
       "type": "row",
-      "title": "Topology",
+      "title": "Logs",
       "collapsed": false,
       "gridPos": { "x": 0, "y": 30, "w": 24, "h": 1 },
       "panels": []
     },
     {
+      "id": 6,
+      "gridPos": { "x": 0, "y": 31, "w": 24, "h": 10 },
+      "type": "barchart",
+      "title": "[Aggregate] Log volume by severity",
+      "libraryPanel": { "uid": "[=folder_uid]-lv", "name": "[Aggregate] Log volume by severity" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 12,
+      "type": "row",
+      "title": "Topology",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 41, "w": 24, "h": 1 },
+      "panels": []
+    },
+    {
       "id": 5,
-      "gridPos": { "x": 0, "y": 31, "w": 24, "h": 14 },
+      "gridPos": { "x": 0, "y": 42, "w": 24, "h": 14 },
       "type": "nodeGraph",
       "title": "Service dependency graph",
       "description": "Live topology map generated from trace data. Node size = request rate, edge colour = error rate. Requires Tempo metrics generator (enabled by default in grafana/otel-lgtm).",

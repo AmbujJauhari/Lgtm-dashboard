@@ -1,0 +1,82 @@
+{
+  "uid": "lv",
+  "name": "[Aggregate] Log volume by severity",
+  "kind": 1,
+  "model": {
+    "type": "barchart",
+    "title": "[Aggregate] Log volume by severity",
+    "description": "Log count per service over the selected range, stacked by severity. Dark-red=FATAL · Red=ERROR · Orange=WARN · Green=INFO · Blue=DEBUG.",
+    "datasource": { "type": "loki", "uid": "__LOKI__" },
+    "targets": [
+      {
+        "datasource": { "type": "loki", "uid": "__LOKI__" },
+        "expr": "sum by (service_name) (count_over_time({__APP_SELECTOR__,severity_text=\"FATAL\"}[$__range]))",
+        "legendFormat": "{{service_name}}",
+        "refId": "FATAL",
+        "queryType": "instant"
+      },
+      {
+        "datasource": { "type": "loki", "uid": "__LOKI__" },
+        "expr": "sum by (service_name) (count_over_time({__APP_SELECTOR__,severity_text=\"ERROR\"}[$__range]))",
+        "legendFormat": "{{service_name}}",
+        "refId": "ERROR",
+        "queryType": "instant"
+      },
+      {
+        "datasource": { "type": "loki", "uid": "__LOKI__" },
+        "expr": "sum by (service_name) (count_over_time({__APP_SELECTOR__,severity_text=\"WARN\"}[$__range]))",
+        "legendFormat": "{{service_name}}",
+        "refId": "WARN",
+        "queryType": "instant"
+      },
+      {
+        "datasource": { "type": "loki", "uid": "__LOKI__" },
+        "expr": "sum by (service_name) (count_over_time({__APP_SELECTOR__,severity_text=\"INFO\"}[$__range]))",
+        "legendFormat": "{{service_name}}",
+        "refId": "INFO",
+        "queryType": "instant"
+      },
+      {
+        "datasource": { "type": "loki", "uid": "__LOKI__" },
+        "expr": "sum by (service_name) (count_over_time({__APP_SELECTOR__,severity_text=\"DEBUG\"}[$__range]))",
+        "legendFormat": "{{service_name}}",
+        "refId": "DEBUG",
+        "queryType": "instant"
+      }
+    ],
+    "options": {
+      "orientation": "vertical",
+      "stacking": "normal",
+      "fillOpacity": 80,
+      "groupWidth": 0.7,
+      "barWidth": 0.97,
+      "legend": { "displayMode": "hidden" },
+      "tooltip": { "mode": "multi", "sort": "desc" }
+    },
+    "fieldConfig": {
+      "defaults": { "unit": "short" },
+      "overrides": [
+        {
+          "matcher": { "id": "byFrameRefID", "options": "FATAL" },
+          "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#7B000B" } }]
+        },
+        {
+          "matcher": { "id": "byFrameRefID", "options": "ERROR" },
+          "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#F2495C" } }]
+        },
+        {
+          "matcher": { "id": "byFrameRefID", "options": "WARN" },
+          "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#FF9830" } }]
+        },
+        {
+          "matcher": { "id": "byFrameRefID", "options": "INFO" },
+          "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#73BF69" } }]
+        },
+        {
+          "matcher": { "id": "byFrameRefID", "options": "DEBUG" },
+          "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#5794F2" } }]
+        }
+      ]
+    }
+  }
+}
