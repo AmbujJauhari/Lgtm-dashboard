@@ -24,6 +24,8 @@ services:
       - GF_FEATURE_TOGGLES_ENABLE=nestedFolders
     volumes:
       - lgtm_data:/data
+      - ./otel-collector-config.yaml:/otel-lgtm/otelcol-config.yaml:ro
+      - ./loki-config.yaml:/otel-lgtm/loki-config.yaml:ro
     networks:
       - lgtm
     restart: unless-stopped

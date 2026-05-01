@@ -1,0 +1,57 @@
+# Custom OTel Collector config for the grafana/otel-lgtm container.
+# Mounted at /otel-lgtm/otelcol-config.yaml — overrides the image default.
+#
+# Key additions vs the default:
+#   transform/metric_labels — copies cmdbReference and opEnvironment from OTel
+#   resource attributes to metric data-point attributes so Prometheus indexes
+#   them as series labels on every metric (not just in target_info).
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://*"
+            - "https://*"
+
+processors:
+  batch:
+
+  # Promote mandatory resource attributes to Prometheus series labels.
+  # Prometheus's OTLP endpoint turns data-point attributes into metric labels;
+  # resource attributes alone only land in target_info.
+  transform/metric_labels:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["cmdbReference"], resource.attributes["cmdbReference"])
+          - set(attributes["opEnvironment"], resource.attributes["opEnvironment"])
+
+exporters:
+  debug:
+    verbosity: basic
+  otlphttp/logs:
+    endpoint: http://127.0.0.1:3100/otlp
+  otlphttp/metrics:
+    endpoint: http://127.0.0.1:9090/api/v1/otlp
+  otlp/traces:
+    endpoint: http://127.0.0.1:4418
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/traces, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [transform/metric_labels, batch]
+      exporters: [otlphttp/metrics, debug]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/logs, debug]

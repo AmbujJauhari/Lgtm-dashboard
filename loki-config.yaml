@@ -1,0 +1,57 @@
+# Custom Loki config for the grafana/otel-lgtm container.
+# Mounted at /otel-lgtm/loki-config.yaml — overrides the image default.
+#
+# Key addition vs the default:
+#   limits_config.otlp_config — promotes cmdbReference and opEnvironment from
+#   OTel resource attributes to Loki stream labels so they appear in the
+#   label filter dropdown (not buried as structured metadata).
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /data/loki
+  storage:
+    filesystem:
+      chunks_directory: /data/loki/chunks
+      rules_directory: /data/loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  otlp_config:
+    resource_attributes:
+      attributes_config:
+        # Promote firm mandatory attributes to stream labels.
+        # Stream labels appear in the Loki Explore label filter dropdown
+        # and can be used in LogQL stream selectors {cmdbReference="..."}.
+        - attribute: cmdbReference
+          action: index_label
+        - attribute: opEnvironment
+          action: index_label
+
+ruler:
+  alertmanager_url: http://localhost:9093
