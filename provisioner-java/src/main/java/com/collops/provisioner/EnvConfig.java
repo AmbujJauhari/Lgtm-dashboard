@@ -11,9 +11,10 @@ import java.util.Map;
  *
  * YAML shape:
  *   team: CollOps
- *   env: qa
  *   service_groups:
- *     app:
+ *     MyServiceGroup:
+ *       cmdb_reference: APP-123
+ *       op_environment: MAT_04
  *       grafana_url: ...
  *       grafana_token_env: ...
  *       datasources:
@@ -28,14 +29,10 @@ import java.util.Map;
 public class EnvConfig {
 
     private String team;
-    private String env;
     private Map<String, ServiceGroupConfig> serviceGroups = new HashMap<>();
 
     public String getTeam() { return team; }
     public void setTeam(String team) { this.team = team; }
-
-    public String getEnv() { return env; }
-    public void setEnv(String env) { this.env = env; }
 
     public Map<String, ServiceGroupConfig> getServiceGroups() { return serviceGroups; }
     public void setServiceGroups(Map<String, ServiceGroupConfig> serviceGroups) { this.serviceGroups = serviceGroups; }
@@ -43,6 +40,8 @@ public class EnvConfig {
     public static class ServiceGroupConfig {
         private String grafanaUrl;
         private String grafanaTokenEnv;
+        private String cmdbReference;
+        private String opEnvironment;
         private DatasourceConfig datasources = new DatasourceConfig();
         private Map<String, Object> thresholds = new HashMap<>();
 
@@ -51,6 +50,12 @@ public class EnvConfig {
 
         public String getGrafanaTokenEnv() { return grafanaTokenEnv; }
         public void setGrafanaTokenEnv(String grafanaTokenEnv) { this.grafanaTokenEnv = grafanaTokenEnv; }
+
+        public String getCmdbReference() { return cmdbReference; }
+        public void setCmdbReference(String cmdbReference) { this.cmdbReference = cmdbReference; }
+
+        public String getOpEnvironment() { return opEnvironment; }
+        public void setOpEnvironment(String opEnvironment) { this.opEnvironment = opEnvironment; }
 
         public DatasourceConfig getDatasources() { return datasources; }
         public void setDatasources(DatasourceConfig datasources) { this.datasources = datasources; }

@@ -1,5 +1,4 @@
 team: CollOps
-env: nonprod
 
 x-grafana: &grafana
   grafana_url: https://grafana.nonprod.internal
@@ -12,6 +11,8 @@ x-grafana: &grafana
 service_groups:
   app:
     <<: *grafana
+    cmdb_reference: REPLACE_WITH_NONPROD_CMDB_REFERENCE
+    op_environment: REPLACE_WITH_NONPROD_OP_ENVIRONMENT
     thresholds:
       error_rate_warning: 0.05
       error_rate_critical: 0.10

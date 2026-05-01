@@ -27,9 +27,9 @@ import java.util.Map;
  * Usage:
  *   java -jar provisioner.jar deploy --config=config/qa.yaml
  *
- * Provisions every service_group defined in the config file into the environment
- * declared by that same file. Each service group gets its own folder subtree:
- *   {team} → {service_group} → {env}
+ * Provisions every service_group defined in the config file.
+ * Folder hierarchy: {team} → {service_group} → {cmdbReference}
+ * Panel/dashboard UIDs are namespaced by slug(opEnvironment), which is unique firm-wide.
  */
 @Component
 @Order(1)
@@ -76,11 +76,10 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
         }
 
         String team = envConfig.getTeam();
-        String env  = envConfig.getEnv();
         Map<String, EnvConfig.ServiceGroupConfig> serviceGroups = envConfig.getServiceGroups();
 
-        if (team == null || env == null) {
-            System.err.println("Config file must declare 'team' and 'env' at the top level.");
+        if (team == null) {
+            System.err.println("Config file must declare 'team' at the top level.");
             exitCode = 1;
             return;
         }
@@ -90,58 +89,56 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
             return;
         }
 
-        // Team folder is shared across all service groups — create it once.
         String teamFolderUid = slug(team);
-        // Each service group may have its own Grafana instance, so we create one client per group.
-        // For the team folder we use the first service group's connection (any will do for a shared instance).
         EnvConfig.ServiceGroupConfig first = serviceGroups.values().iterator().next();
-        String firstToken = resolveToken(first);
         String grafanaUser = System.getenv().getOrDefault("GRAFANA_USER", "admin");
         String grafanaPass = System.getenv().getOrDefault("GRAFANA_PASSWORD", "admin");
-        new GrafanaClient(first.getGrafanaUrl(), firstToken, grafanaUser, grafanaPass)
+        new GrafanaClient(first.getGrafanaUrl(), resolveToken(first), grafanaUser, grafanaPass)
                 .ensureFolder(teamFolderUid, team, null);
 
         for (Map.Entry<String, EnvConfig.ServiceGroupConfig> entry : serviceGroups.entrySet()) {
             String sgName = entry.getKey();
             EnvConfig.ServiceGroupConfig sg = entry.getValue();
-            deployServiceGroup(team, teamFolderUid, sgName, env, sg, grafanaUser, grafanaPass);
+            deployServiceGroup(team, teamFolderUid, sgName, sg, grafanaUser, grafanaPass);
         }
 
-        log.info("Provisioning complete for env='{}'.", env);
+        log.info("Provisioning complete for team='{}'.", team);
     }
 
-    private void deployServiceGroup(String team, String teamFolderUid, String sgName, String env,
+    private void deployServiceGroup(String team, String teamFolderUid, String sgName,
                                      EnvConfig.ServiceGroupConfig sg,
                                      String grafanaUser, String grafanaPass) throws Exception {
-        String teamSlug = slug(team);
-        String sgSlug   = slug(sgName);
-        String envSlug  = slug(env);
+        String teamSlug  = slug(team);
+        String sgSlug    = slug(sgName);
+        String cmdbSlug  = slug(sg.getCmdbReference());
+        String opEnvSlug = slug(sg.getOpEnvironment());
 
-        String sgFolderUid  = teamSlug + "-" + sgSlug;
-        String envFolderUid = teamSlug + "-" + sgSlug + "-" + envSlug;
+        String sgFolderUid   = teamSlug + "-" + sgSlug;
+        String cmdbFolderUid = teamSlug + "-" + sgSlug + "-" + cmdbSlug;
 
-        String appSelector = String.format("team=\"%s\",service_group=\"%s\"", team, sgName);
+        String appSelector = String.format("cmdbReference=\"%s\"", sg.getCmdbReference());
         String appSelectorJsonEscaped = appSelector.replace("\"", "\\\"");
 
         String mimirUid = sg.getDatasources().getMimir();
         String lokiUid  = sg.getDatasources().getLoki();
         String tempoUid = sg.getDatasources().getTempo();
 
-        log.info("Deploying service_group='{}' env='{}' → {}/{}/{}", sgName, env,
-                teamFolderUid, sgFolderUid, envFolderUid);
+        log.info("Deploying service_group='{}' cmdbReference='{}' opEnvironment='{}' → {}/{}/{}",
+                sgName, sg.getCmdbReference(), sg.getOpEnvironment(),
+                teamFolderUid, sgFolderUid, cmdbFolderUid);
 
         GrafanaClient client = new GrafanaClient(sg.getGrafanaUrl(), resolveToken(sg), grafanaUser, grafanaPass);
 
-        client.ensureFolder(sgFolderUid,  sgName, teamFolderUid);
-        client.ensureFolder(envFolderUid, env,    sgFolderUid);
+        client.ensureFolder(sgFolderUid,   sgName,               teamFolderUid);
+        client.ensureFolder(cmdbFolderUid, sg.getCmdbReference(), sgFolderUid);
 
         for (String panelFile : LIBRARY_PANEL_FILES) {
             Path path = Path.of("library_panels", panelFile);
             String raw        = Files.readString(path);
-            String namespaced = namespacePanelUid(envFolderUid, raw);
+            String namespaced = namespacePanelUid(opEnvSlug, raw);
             String json       = injectDatasource(namespaced, mimirUid, lokiUid, tempoUid, appSelectorJsonEscaped)
-                                    .replace("__FOLDER_UID__", envFolderUid);
-            client.upsertLibraryPanel(envFolderUid, json);
+                                    .replace("__FOLDER_UID__", opEnvSlug);
+            client.upsertLibraryPanel(cmdbFolderUid, json);
         }
 
         // Library element writes are occasionally not visible to the dashboard save
@@ -149,16 +146,21 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
         Thread.sleep(1000);
 
         Map<String, Object> model = new HashMap<>();
-        model.put("folder_uid",   envFolderUid);
-        model.put("app_selector", appSelectorJsonEscaped);
-        model.put("mimir_uid",    mimirUid);
-        model.put("loki_uid",     lokiUid);
-        model.put("tempo_uid",    tempoUid);
-        model.put("thresholds",   sg.getThresholds());
+        model.put("folder_uid",    cmdbFolderUid);
+        model.put("op_env_uid",    opEnvSlug);
+        model.put("team",          team);
+        model.put("team_tag",      slug(team));
+        model.put("service_group", sgName);
+        model.put("cmdb_ref",      sg.getCmdbReference());
+        model.put("app_selector",  appSelectorJsonEscaped);
+        model.put("mimir_uid",     mimirUid);
+        model.put("loki_uid",      lokiUid);
+        model.put("tempo_uid",     tempoUid);
+        model.put("thresholds",    sg.getThresholds());
 
         for (String templateName : DASHBOARD_TEMPLATES) {
             String json = renderTemplate(templateName, model);
-            client.upsertDashboard(envFolderUid, json);
+            client.upsertDashboard(cmdbFolderUid, json);
         }
     }
 

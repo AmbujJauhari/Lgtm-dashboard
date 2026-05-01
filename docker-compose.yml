@@ -52,6 +52,10 @@ services:
     environment:
       - OTLP_ENDPOINT=http://lgtm:4317
       - LOKI_ENDPOINT=http://lgtm:3100
+      - TEAM=CollOps
+      - SERVICE_GROUP=app
+      - CMDB_REFERENCE=APP-LOCAL
+      - OP_ENVIRONMENT=LOCAL
     networks:
       - lgtm
     depends_on:

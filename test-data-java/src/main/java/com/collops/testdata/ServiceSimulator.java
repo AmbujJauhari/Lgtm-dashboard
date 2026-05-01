@@ -61,6 +61,10 @@ public class ServiceSimulator {
     private final int    baseRps;
     private final String lokiEndpoint;
     private final String hostname;
+    private final String team;
+    private final String serviceGroup;
+    private final String cmdbReference;
+    private final String opEnvironment;
 
     private final Tracer          tracer;
     private final DoubleHistogram httpServerDuration;
@@ -87,13 +91,18 @@ public class ServiceSimulator {
     private int ticksSinceOldGc   = 0;
 
     public ServiceSimulator(String serviceName, String instance, double errorRate, int baseRps,
-                             String otlpEndpoint, String lokiEndpoint) {
+                             String otlpEndpoint, String lokiEndpoint,
+                             String team, String serviceGroup, String cmdbReference, String opEnvironment) {
         this.serviceName   = serviceName;
         this.instance      = instance;
         this.errorRate     = errorRate;
         this.baseRps       = baseRps;
         this.lokiEndpoint  = lokiEndpoint;
         this.hostname      = resolveHostname();
+        this.team          = team;
+        this.serviceGroup  = serviceGroup;
+        this.cmdbReference = cmdbReference;
+        this.opEnvironment = opEnvironment;
 
         // Initial JVM gauge values
         heapEden   = randomBetween(50_000_000,  150_000_000);
@@ -109,8 +118,10 @@ public class ServiceSimulator {
                 Resource.builder()
                         .put(AttributeKey.stringKey("service.name"),        serviceName)
                         .put(AttributeKey.stringKey("service.instance.id"), instance)
-                        .put(AttributeKey.stringKey("service.group"),       "app")
-                        .put(AttributeKey.stringKey("team"),                "CollOps")
+                        .put(AttributeKey.stringKey("service.group"),       serviceGroup)
+                        .put(AttributeKey.stringKey("team"),                team)
+                        .put(AttributeKey.stringKey("cmdbReference"),       cmdbReference)
+                        .put(AttributeKey.stringKey("opEnvironment"),       opEnvironment)
                         .put(AttributeKey.stringKey("host.name"),           hostname)
                         .build()
         );
@@ -340,10 +351,12 @@ public class ServiceSimulator {
             ObjectNode stream  = streams.addObject();
 
             ObjectNode labels = stream.putObject("stream");
-            labels.put("team",         "CollOps");
-            labels.put("service_group","app");
-            labels.put("service_name", serviceName);
-            labels.put("instance",     instance);
+            labels.put("team",          team);
+            labels.put("service_group", serviceGroup);
+            labels.put("cmdbReference", cmdbReference);
+            labels.put("opEnvironment", opEnvironment);
+            labels.put("service_name",  serviceName);
+            labels.put("instance",      instance);
             labels.put("severity_text", level);
 
             ArrayNode values = stream.putArray("values");

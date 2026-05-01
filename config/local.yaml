@@ -1,9 +1,7 @@
 team: CollOps
-env: local
 
-# YAML anchors: define shared Grafana connection once, merge into each service group.
-# grafana/otel-lgtm provisions datasources with these UIDs by default.
-# If they differ on your machine: curl http://localhost:3000/api/datasources -u admin:admin | jq '.[] | {name,uid}'
+# To look up datasource UIDs: curl http://localhost:3001/api/datasources -u admin:admin | jq '.[] | {name,uid}'
+# grafana/otel-lgtm provisions these datasource UIDs by default.
 x-grafana: &grafana
   grafana_url: http://lgtm:3000   # internal Docker network name — provisioner runs in Docker too
   grafana_token_env: GRAFANA_TOKEN_LOCAL
@@ -15,6 +13,8 @@ x-grafana: &grafana
 service_groups:
   app:
     <<: *grafana
+    cmdb_reference: APP-LOCAL
+    op_environment: LOCAL
     thresholds:
       error_rate_warning: 0.05
       error_rate_critical: 0.10

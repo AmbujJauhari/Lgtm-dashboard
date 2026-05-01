@@ -1,5 +1,4 @@
 team: CollOps
-env: qa
 
 # To look up datasource UIDs: curl https://grafana.qa.internal/api/datasources -H "Authorization: Bearer $GRAFANA_TOKEN_QA" | jq '.[] | {name,uid}'
 x-grafana: &grafana
@@ -13,6 +12,8 @@ x-grafana: &grafana
 service_groups:
   app:
     <<: *grafana
+    cmdb_reference: REPLACE_WITH_QA_CMDB_REFERENCE
+    op_environment: REPLACE_WITH_QA_OP_ENVIRONMENT
     thresholds:
       error_rate_warning: 0.05
       error_rate_critical: 0.10

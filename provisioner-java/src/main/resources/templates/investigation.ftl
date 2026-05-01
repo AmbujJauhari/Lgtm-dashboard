@@ -1,8 +1,8 @@
 {
-  "uid": "[=folder_uid]-inv",
-  "title": "Investigation",
-  "description": "Tier 3 — correlate logs, metrics and traces for any CollOps service. Exemplar dots on the metrics panel link to traces in Tempo. TraceId values in the log panel also link to Tempo.",
-  "tags": ["collops", "investigation", "tier3"],
+  "uid": "[=op_env_uid]-inv",
+  "title": "[=team] Investigation",
+  "description": "Tier 3 — correlate logs, metrics and traces for any [=team] service ([=cmdb_ref]). Exemplar dots on the metrics panel link to traces in Tempo. TraceId values in the log panel also link to Tempo.",
+  "tags": ["[=team_tag]", "investigation", "tier3"],
   "timezone": "browser",
   "refresh": "30s",
   "schemaVersion": 39,
@@ -10,8 +10,8 @@
   "timepicker": {},
   "links": [
     {
-      "title": "CollOps Overview",
-      "url": "/d/[=folder_uid]-ov",
+      "title": "[=team] Overview",
+      "url": "/d/[=op_env_uid]-ov",
       "type": "link",
       "icon": "arrow-left",
       "tooltip": "Back to fleet overview",

@@ -1,8 +1,8 @@
 {
-  "uid": "[=folder_uid]-ov",
-  "title": "CollOps Overview",
-  "description": "Tier 1 — aggregate view. Click any service to drill into its component dashboard.",
-  "tags": ["collops", "aggregate", "tier1"],
+  "uid": "[=op_env_uid]-ov",
+  "title": "[=team] Overview",
+  "description": "Tier 1 — aggregate view for [=cmdb_ref]. Click any service to drill into its component dashboard.",
+  "tags": ["[=team_tag]", "aggregate", "tier1"],
   "timezone": "browser",
   "refresh": "30s",
   "schemaVersion": 39,
@@ -24,7 +24,7 @@
       "gridPos": { "x": 0, "y": 1, "w": 24, "h": 10 },
       "type": "state-timeline",
       "title": "[Aggregate] Service health",
-      "libraryPanel": { "uid": "[=folder_uid]-hh", "name": "[Aggregate] Service health" },
+      "libraryPanel": { "uid": "[=op_env_uid]-hh", "name": "[Aggregate] Service health" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -33,7 +33,7 @@
       "gridPos": { "x": 0, "y": 11, "w": 24, "h": 8 },
       "type": "table",
       "title": "[Aggregate] Error rate per service",
-      "libraryPanel": { "uid": "[=folder_uid]-eb", "name": "[Aggregate] Error rate per service" },
+      "libraryPanel": { "uid": "[=op_env_uid]-eb", "name": "[Aggregate] Error rate per service" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -50,7 +50,7 @@
       "gridPos": { "x": 0, "y": 20, "w": 12, "h": 10 },
       "type": "barchart",
       "title": "[Aggregate] Exception count per component",
-      "libraryPanel": { "uid": "[=folder_uid]-ec", "name": "[Aggregate] Exception count per component" },
+      "libraryPanel": { "uid": "[=op_env_uid]-ec", "name": "[Aggregate] Exception count per component" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -59,7 +59,7 @@
       "gridPos": { "x": 12, "y": 20, "w": 12, "h": 10 },
       "type": "table",
       "title": "[Aggregate] Top slowest services (p99 latency)",
-      "libraryPanel": { "uid": "[=folder_uid]-ts", "name": "[Aggregate] Top slowest services" },
+      "libraryPanel": { "uid": "[=op_env_uid]-ts", "name": "[Aggregate] Top slowest services" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -76,7 +76,7 @@
       "gridPos": { "x": 0, "y": 31, "w": 24, "h": 10 },
       "type": "barchart",
       "title": "[Aggregate] Log volume by severity",
-      "libraryPanel": { "uid": "[=folder_uid]-lv", "name": "[Aggregate] Log volume by severity" },
+      "libraryPanel": { "uid": "[=op_env_uid]-lv", "name": "[Aggregate] Log volume by severity" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },

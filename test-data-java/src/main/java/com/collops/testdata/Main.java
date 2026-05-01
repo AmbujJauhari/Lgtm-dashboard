@@ -6,8 +6,12 @@ import java.util.List;
  * Starts one ServiceSimulator per configured service and ticks them every second.
  *
  * Environment variables:
- *   OTLP_ENDPOINT  — OTLP gRPC endpoint (default: http://localhost:4317)
- *   LOKI_ENDPOINT  — Loki push endpoint  (default: http://localhost:3100)
+ *   OTLP_ENDPOINT    — OTLP gRPC endpoint   (default: http://localhost:4317)
+ *   LOKI_ENDPOINT    — Loki push endpoint    (default: http://localhost:3100)
+ *   TEAM             — OTel resource team    (default: CollOps)
+ *   SERVICE_GROUP    — OTel service.group    (default: app)
+ *   CMDB_REFERENCE   — firm cmdbReference    (default: APP-LOCAL)
+ *   OP_ENVIRONMENT   — firm opEnvironment    (default: LOCAL)
  */
 public class Main {
 
@@ -19,21 +23,29 @@ public class Main {
     );
 
     public static void main(String[] args) throws InterruptedException {
-        String otlpEndpoint = env("OTLP_ENDPOINT", "http://localhost:4317");
-        String lokiEndpoint = env("LOKI_ENDPOINT",  "http://localhost:3100");
+        String otlpEndpoint  = env("OTLP_ENDPOINT",  "http://localhost:4317");
+        String lokiEndpoint  = env("LOKI_ENDPOINT",  "http://localhost:3100");
+        String team          = env("TEAM",            "CollOps");
+        String serviceGroup  = env("SERVICE_GROUP",   "app");
+        String cmdbReference = env("CMDB_REFERENCE",  "APP-LOCAL");
+        String opEnvironment = env("OP_ENVIRONMENT",  "LOCAL");
 
         System.out.println("=".repeat(55));
         System.out.println("  CollOps test data generator");
         System.out.println("=".repeat(55));
-        System.out.printf("  OTLP endpoint : %s%n", otlpEndpoint);
-        System.out.printf("  Loki endpoint : %s%n", lokiEndpoint);
-        System.out.printf("  Services      : %s%n", SERVICES.stream().map(ServiceDef::name).toList());
+        System.out.printf("  OTLP endpoint  : %s%n", otlpEndpoint);
+        System.out.printf("  Loki endpoint  : %s%n", lokiEndpoint);
+        System.out.printf("  Team           : %s%n", team);
+        System.out.printf("  Service group  : %s%n", serviceGroup);
+        System.out.printf("  cmdbReference  : %s%n", cmdbReference);
+        System.out.printf("  opEnvironment  : %s%n", opEnvironment);
+        System.out.printf("  Services       : %s%n", SERVICES.stream().map(ServiceDef::name).toList());
         System.out.println("  Press Ctrl+C to stop.");
         System.out.println("=".repeat(55));
 
         List<ServiceSimulator> simulators = SERVICES.stream()
                 .map(s -> new ServiceSimulator(s.name(), s.instance(), s.errorRate(), s.baseRps(),
-                        otlpEndpoint, lokiEndpoint))
+                        otlpEndpoint, lokiEndpoint, team, serviceGroup, cmdbReference, opEnvironment))
                 .toList();
 
         int tick = 0;
