@@ -27,9 +27,11 @@ import java.util.Map;
  * Usage:
  *   java -jar provisioner.jar deploy --config=config/qa.yaml
  *
- * Provisions every service_group defined in the config file.
  * Folder hierarchy: {team} → {service_group} → {cmdbReference}
- * Panel/dashboard UIDs are namespaced by slug(opEnvironment), which is unique firm-wide.
+ * Panel/dashboard UIDs are namespaced by cmdbReference (AT code), which is unique per deployment.
+ *
+ * All YAML values are used verbatim — no silent transformation. Values must contain only
+ * letters, digits, hyphens, underscores or dots (Grafana UID character set).
  */
 @Component
 @Order(1)
@@ -89,7 +91,9 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
             return;
         }
 
-        String teamFolderUid = slug(team);
+        validateUidSafe(team, "team");
+
+        String teamFolderUid = team;
         EnvConfig.ServiceGroupConfig first = serviceGroups.values().iterator().next();
         String grafanaUser = System.getenv().getOrDefault("GRAFANA_USER", "admin");
         String grafanaPass = System.getenv().getOrDefault("GRAFANA_PASSWORD", "admin");
@@ -108,15 +112,17 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
     private void deployServiceGroup(String team, String teamFolderUid, String sgName,
                                      EnvConfig.ServiceGroupConfig sg,
                                      String grafanaUser, String grafanaPass) throws Exception {
-        String teamSlug  = slug(team);
-        String sgSlug    = slug(sgName);
-        String cmdbSlug  = slug(sg.getCmdbReference());
-        String opEnvSlug = slug(sg.getOpEnvironment());
+        validateUidSafe(sgName,                  "service_group key '" + sgName + "'");
+        validateUidSafe(sg.getCmdbReference(),   "cmdb_reference");
+        validateUidSafe(sg.getOpEnvironment(),   "op_environment");
 
-        String sgFolderUid   = teamSlug + "-" + sgSlug;
-        String cmdbFolderUid = teamSlug + "-" + sgSlug + "-" + cmdbSlug;
+        String cmdbRef = sg.getCmdbReference();
 
-        String appSelector = String.format("cmdbReference=\"%s\"", sg.getCmdbReference());
+        String sgFolderUid   = team + "-" + sgName;
+        String cmdbFolderUid = team + "-" + sgName + "-" + cmdbRef;
+        validateUidLength(cmdbFolderUid, "Combined folder UID (team-serviceGroup-cmdbReference)");
+
+        String appSelector = String.format("cmdbReference=\"%s\"", cmdbRef);
         String appSelectorJsonEscaped = appSelector.replace("\"", "\\\"");
 
         String mimirUid = sg.getDatasources().getMimir();
@@ -124,20 +130,20 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
         String tempoUid = sg.getDatasources().getTempo();
 
         log.info("Deploying service_group='{}' cmdbReference='{}' opEnvironment='{}' → {}/{}/{}",
-                sgName, sg.getCmdbReference(), sg.getOpEnvironment(),
+                sgName, cmdbRef, sg.getOpEnvironment(),
                 teamFolderUid, sgFolderUid, cmdbFolderUid);
 
         GrafanaClient client = new GrafanaClient(sg.getGrafanaUrl(), resolveToken(sg), grafanaUser, grafanaPass);
 
-        client.ensureFolder(sgFolderUid,   sgName,               teamFolderUid);
-        client.ensureFolder(cmdbFolderUid, sg.getCmdbReference(), sgFolderUid);
+        client.ensureFolder(sgFolderUid,   sgName,  teamFolderUid);
+        client.ensureFolder(cmdbFolderUid, cmdbRef, sgFolderUid);
 
         for (String panelFile : LIBRARY_PANEL_FILES) {
             Path path = Path.of("library_panels", panelFile);
             String raw        = Files.readString(path);
-            String namespaced = namespacePanelUid(opEnvSlug, raw);
+            String namespaced = namespacePanelUid(cmdbRef, raw);
             String json       = injectDatasource(namespaced, mimirUid, lokiUid, tempoUid, appSelectorJsonEscaped)
-                                    .replace("__FOLDER_UID__", opEnvSlug);
+                                    .replace("__FOLDER_UID__", cmdbRef);
             client.upsertLibraryPanel(cmdbFolderUid, json);
         }
 
@@ -147,11 +153,10 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
 
         Map<String, Object> model = new HashMap<>();
         model.put("folder_uid",    cmdbFolderUid);
-        model.put("op_env_uid",    opEnvSlug);
         model.put("team",          team);
-        model.put("team_tag",      slug(team));
+        model.put("team_tag",      team.toLowerCase().replaceAll("[^a-z0-9]+", "-"));
         model.put("service_group", sgName);
-        model.put("cmdb_ref",      sg.getCmdbReference());
+        model.put("cmdb_ref",      cmdbRef);
         model.put("app_selector",  appSelectorJsonEscaped);
         model.put("mimir_uid",     mimirUid);
         model.put("loki_uid",      lokiUid);
@@ -209,14 +214,29 @@ public class DeployRunner implements ApplicationRunner, ExitCodeGenerator {
         }
     }
 
+    // ── Validation ───────────────────────────────────────────────────────────
+
+    private static void validateUidSafe(String value, String fieldName) {
+        if (value == null || value.isBlank())
+            throw new IllegalArgumentException(fieldName + " must not be blank");
+        if (!value.matches("[a-zA-Z0-9\\-_.]+"))
+            throw new IllegalArgumentException(
+                fieldName + " value '" + value + "' contains characters invalid for Grafana UIDs. " +
+                "Allowed: letters, digits, hyphens, underscores, dots.");
+        validateUidLength(value, fieldName);
+    }
+
+    private static void validateUidLength(String value, String fieldName) {
+        if (value.length() > 40)
+            throw new IllegalArgumentException(
+                fieldName + " value '" + value + "' is " + value.length() +
+                " characters — exceeds the 40-character Grafana UID limit.");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private String resolveToken(EnvConfig.ServiceGroupConfig sg) {
         return sg.getGrafanaTokenEnv() != null ? System.getenv(sg.getGrafanaTokenEnv()) : null;
-    }
-
-    private static String slug(String s) {
-        return s.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
     }
 
     @Override

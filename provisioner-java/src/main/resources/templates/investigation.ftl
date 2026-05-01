@@ -1,5 +1,5 @@
 {
-  "uid": "[=op_env_uid]-inv",
+  "uid": "[=cmdb_ref]-inv",
   "title": "[=team] Investigation",
   "description": "Tier 3 — correlate logs, metrics and traces for any [=team] service ([=cmdb_ref]). Exemplar dots on the metrics panel link to traces in Tempo. TraceId values in the log panel also link to Tempo.",
   "tags": ["[=team_tag]", "investigation", "tier3"],
@@ -11,7 +11,7 @@
   "links": [
     {
       "title": "[=team] Overview",
-      "url": "/d/[=op_env_uid]-ov",
+      "url": "/d/[=cmdb_ref]-ov",
       "type": "link",
       "icon": "arrow-left",
       "tooltip": "Back to fleet overview",
