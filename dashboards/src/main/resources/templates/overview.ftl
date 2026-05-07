@@ -1,8 +1,8 @@
 {
   "uid": "[=cmdb_ref]-ov",
   "title": "[=team] Overview",
-  "description": "Tier 1 — aggregate view for [=cmdb_ref]. Click any service to drill into its component dashboard. panels-[=panels_version]",
-  "tags": ["[=team_tag]", "aggregate", "tier1", "panels-[=panels_version]"],
+  "description": "Tier 1 — aggregate view for [=cmdb_ref]. Click any service to drill into its component dashboard. panels-[=pv["version"]]",
+  "tags": ["[=team_tag]", "aggregate", "tier1", "panels-[=pv["version"]]"],
   "timezone": "browser",
   "refresh": "30s",
   "schemaVersion": 39,
@@ -41,7 +41,7 @@
       "gridPos": { "x": 0, "y": 1, "w": 24, "h": 10 },
       "type": "state-timeline",
       "title": "[Aggregate] Service health",
-      "libraryPanel": { "uid": "hh-[=panels_version]", "name": "[Aggregate] Service health" },
+      "libraryPanel": { "uid": "hh-[=pv.hh]", "name": "[Aggregate] Service health" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -50,7 +50,7 @@
       "gridPos": { "x": 0, "y": 11, "w": 24, "h": 8 },
       "type": "table",
       "title": "[Aggregate] Error rate per service",
-      "libraryPanel": { "uid": "eb-[=panels_version]", "name": "[Aggregate] Error rate per service" },
+      "libraryPanel": { "uid": "eb-[=pv.eb]", "name": "[Aggregate] Error rate per service" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -67,7 +67,7 @@
       "gridPos": { "x": 0, "y": 20, "w": 12, "h": 10 },
       "type": "barchart",
       "title": "[Aggregate] Exception count per component",
-      "libraryPanel": { "uid": "ec-[=panels_version]", "name": "[Aggregate] Exception count per component" },
+      "libraryPanel": { "uid": "ec-[=pv.ec]", "name": "[Aggregate] Exception count per component" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -76,7 +76,7 @@
       "gridPos": { "x": 12, "y": 20, "w": 12, "h": 10 },
       "type": "table",
       "title": "[Aggregate] Top slowest services (p99 latency)",
-      "libraryPanel": { "uid": "ts-[=panels_version]", "name": "[Aggregate] Top slowest services" },
+      "libraryPanel": { "uid": "ts-[=pv.ts]", "name": "[Aggregate] Top slowest services" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -93,7 +93,7 @@
       "gridPos": { "x": 0, "y": 31, "w": 24, "h": 10 },
       "type": "barchart",
       "title": "[Aggregate] Log volume by severity",
-      "libraryPanel": { "uid": "lv-[=panels_version]", "name": "[Aggregate] Log volume by severity" },
+      "libraryPanel": { "uid": "lv-[=pv.lv]", "name": "[Aggregate] Log volume by severity" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },

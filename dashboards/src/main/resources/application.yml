@@ -11,10 +11,6 @@ spring:
     suffix: .ftl
     template-loader-path: classpath:/templates/
 
-# @project.version@ is replaced by Maven resource filtering at build time.
-app:
-  version: "@project.version@"
-
 logging:
   level:
     root: WARN

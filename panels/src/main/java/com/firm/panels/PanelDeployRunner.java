@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.ExitCodeGenerator;
@@ -18,16 +17,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Deploys firm-wide library panels to one or more Grafana instances.
+ * Deploys a versioned set of firm-wide library panels to one or more Grafana instances.
  *
  * Usage:
  *   java -jar panels.jar deploy --config=config/qa.yaml
  *
- * The JAR's own Maven version becomes the panel version at runtime (injected via
- * Maven resource filtering into application.yml). The version suffix is appended to
- * each panel UID and name so multiple JAR versions can coexist in the same Grafana org.
+ * The panel version (e.g. v1) comes from panel_version in the config file and is appended
+ * as a suffix to each panel UID and name so multiple versions can coexist in the same
+ * Grafana org without UID collisions.
  *
- * Example: uid "rm" from a 1.0.0 JAR becomes "rm-1.0.0" in Grafana.
+ * Example: uid "rm" at version v1 becomes "rm-v1" in Grafana.
  */
 @Component
 public class PanelDeployRunner implements ApplicationRunner, ExitCodeGenerator {
@@ -41,9 +40,6 @@ public class PanelDeployRunner implements ApplicationRunner, ExitCodeGenerator {
     @Autowired private PanelConfig config;
     @Autowired private ResourcePatternResolver resourceResolver;
 
-    @Value("${app.version:unknown}")
-    private String appVersion;
-
     private final ObjectMapper mapper = new ObjectMapper();
     private int exitCode = 0;
 
@@ -54,8 +50,14 @@ public class PanelDeployRunner implements ApplicationRunner, ExitCodeGenerator {
             return;
         }
 
+        String version   = config.getPanelVersion();
         String folderUid = config.getFolderUid();
 
+        if (version == null || version.isBlank()) {
+            System.err.println("Config must declare 'panel_version'.");
+            exitCode = 1;
+            return;
+        }
         if (config.getGrafanaInstances() == null || config.getGrafanaInstances().isEmpty()) {
             System.err.println("Config must declare at least one entry under 'grafana_instances'.");
             exitCode = 1;
@@ -71,20 +73,21 @@ public class PanelDeployRunner implements ApplicationRunner, ExitCodeGenerator {
         }
 
         log.info("Deploying {} panel(s) at version '{}' to {} Grafana instance(s).",
-                panels.length, appVersion, config.getGrafanaInstances().size());
+                panels.length, version, config.getGrafanaInstances().size());
 
         String grafanaUser = System.getenv().getOrDefault("GRAFANA_USER", "admin");
         String grafanaPass = System.getenv().getOrDefault("GRAFANA_PASSWORD", "admin");
 
         for (PanelConfig.GrafanaInstance instance : config.getGrafanaInstances()) {
-            deployToInstance(instance, panels, folderUid, grafanaUser, grafanaPass);
+            deployToInstance(instance, panels, version, folderUid, grafanaUser, grafanaPass);
         }
 
-        log.info("Panel deployment complete for version '{}'.", appVersion);
+        log.info("Panel deployment complete for version '{}'.", version);
     }
 
     private void deployToInstance(PanelConfig.GrafanaInstance instance,
                                    Resource[] panels,
+                                   String version,
                                    String folderUid,
                                    String grafanaUser,
                                    String grafanaPass) throws Exception {
@@ -97,7 +100,7 @@ public class PanelDeployRunner implements ApplicationRunner, ExitCodeGenerator {
 
         for (Resource panel : panels) {
             String raw        = panel.getContentAsString(StandardCharsets.UTF_8);
-            String versioned  = applyVersionSuffix(appVersion, raw);
+            String versioned  = applyVersionSuffix(version, raw);
             String injected   = injectDatasources(versioned, ds.getMimir(), ds.getLoki(), ds.getTempo())
                                     .replace("__FOLDER_UID__", folderUid);
             client.upsertLibraryPanel(folderUid, injected);

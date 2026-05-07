@@ -1,3 +1,6 @@
+panels:
+  version: v1
+
 team: CollOps
 
 # To look up datasource UIDs: curl http://localhost:3001/api/datasources -u admin:admin | jq '.[] | {name,uid}'

@@ -1,8 +1,8 @@
 {
   "uid": "[=cmdb_ref]-sov",
   "title": "[=team] Service Overview",
-  "description": "Tier 2 — component dashboard for [=cmdb_ref]. Choose a service from the dropdown. JVM and Server rows start collapsed — expand as needed. panels-[=panels_version]",
-  "tags": ["[=team_tag]", "component", "tier2", "panels-[=panels_version]"],
+  "description": "Tier 2 — component dashboard for [=cmdb_ref]. Choose a service from the dropdown. JVM and Server rows start collapsed — expand as needed. panels-[=pv["version"]]",
+  "tags": ["[=team_tag]", "component", "tier2", "panels-[=pv["version"]]"],
   "timezone": "browser",
   "refresh": "30s",
   "schemaVersion": 39,
@@ -114,7 +114,7 @@
       "gridPos": { "x": 0, "y": 1, "w": 24, "h": 9 },
       "type": "timeseries",
       "title": "[Component] RED metrics",
-      "libraryPanel": { "uid": "rm-[=panels_version]", "name": "[Component] RED metrics" },
+      "libraryPanel": { "uid": "rm-[=pv.rm]", "name": "[Component] RED metrics" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -131,7 +131,7 @@
       "gridPos": { "x": 0, "y": 11, "w": 24, "h": 9 },
       "type": "timeseries",
       "title": "[Component] Outbound HTTP calls",
-      "libraryPanel": { "uid": "oh-[=panels_version]", "name": "[Component] Outbound HTTP calls" },
+      "libraryPanel": { "uid": "oh-[=pv.oh]", "name": "[Component] Outbound HTTP calls" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     },
@@ -147,7 +147,7 @@
           "gridPos": { "x": 0, "y": 21, "w": 16, "h": 9 },
           "type": "timeseries",
           "title": "[Component] JVM memory pools",
-          "libraryPanel": { "uid": "jhgc-[=panels_version]", "name": "[Component] JVM memory pools" },
+          "libraryPanel": { "uid": "jhgc-[=pv.jhgc]", "name": "[Component] JVM memory pools" },
           "fieldConfig": { "defaults": {}, "overrides": [] },
           "options": {}
         },
@@ -156,7 +156,7 @@
           "gridPos": { "x": 16, "y": 21, "w": 8, "h": 9 },
           "type": "timeseries",
           "title": "[Component] JVM GC",
-          "libraryPanel": { "uid": "jgc-[=panels_version]", "name": "[Component] JVM GC" },
+          "libraryPanel": { "uid": "jgc-[=pv.jgc]", "name": "[Component] JVM GC" },
           "fieldConfig": { "defaults": {}, "overrides": [] },
           "options": {}
         },
@@ -165,7 +165,7 @@
           "gridPos": { "x": 0, "y": 30, "w": 24, "h": 8 },
           "type": "timeseries",
           "title": "[Component] CPU & threads",
-          "libraryPanel": { "uid": "tc-[=panels_version]", "name": "[Component] CPU & threads" },
+          "libraryPanel": { "uid": "tc-[=pv.tc]", "name": "[Component] CPU & threads" },
           "fieldConfig": { "defaults": {}, "overrides": [] },
           "options": {}
         }
@@ -333,7 +333,7 @@
       "gridPos": { "x": 0, "y": 23, "w": 24, "h": 10 },
       "type": "logs",
       "title": "[Component] Log stream",
-      "libraryPanel": { "uid": "ls-[=panels_version]", "name": "[Component] Log stream" },
+      "libraryPanel": { "uid": "ls-[=pv.ls]", "name": "[Component] Log stream" },
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {}
     }

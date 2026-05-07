@@ -5,7 +5,6 @@ import freemarker.template.Template;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.ExitCodeGenerator;
@@ -25,7 +24,7 @@ import java.util.Map;
  *
  * Renders the three CollOps Freemarker dashboard templates and upserts them into Grafana.
  * Library panels must already be deployed (run the panels module first).
- * Panel UIDs referenced in templates follow the {uid}-{panels_version} suffix convention.
+ * Panel UIDs in templates use per-panel versions resolved from the panels config block.
  *
  * The deployer version is stamped into each dashboard's tags and into Grafana's version
  * history message, making every Grafana dashboard version traceable to the deployer release.
@@ -42,11 +41,13 @@ public class DashboardDeployRunner implements ApplicationRunner, ExitCodeGenerat
             "investigation.ftl"
     );
 
+    private static final List<String> PANEL_NAMES = List.of(
+            "hh", "eb", "ec", "ts", "lv",
+            "rm", "oh", "jhgc", "jgc", "tc", "ls"
+    );
+
     @Autowired private Configuration freemarkerConfig;
     @Autowired private EnvConfig envConfig;
-
-    @Value("${app.version:unknown}")
-    private String appVersion;
 
     private int exitCode = 0;
 
@@ -57,12 +58,16 @@ public class DashboardDeployRunner implements ApplicationRunner, ExitCodeGenerat
             return;
         }
 
-        String team          = envConfig.getTeam();
-        String panelsVersion = appVersion;
+        String team = envConfig.getTeam();
         Map<String, EnvConfig.ServiceGroupConfig> serviceGroups = envConfig.getServiceGroups();
 
         if (team == null) {
             System.err.println("Config file must declare 'team' at the top level.");
+            exitCode = 1;
+            return;
+        }
+        if (envConfig.getPanels().get("version") == null) {
+            System.err.println("Config file must declare 'panels.version'.");
             exitCode = 1;
             return;
         }
@@ -82,16 +87,15 @@ public class DashboardDeployRunner implements ApplicationRunner, ExitCodeGenerat
                 .ensureFolder(teamFolderUid, team, null);
 
         for (Map.Entry<String, EnvConfig.ServiceGroupConfig> entry : serviceGroups.entrySet()) {
-            deployServiceGroup(team, teamFolderUid, entry.getKey(), entry.getValue(),
-                    panelsVersion, grafanaUser, grafanaPass);
+            deployServiceGroup(team, teamFolderUid, entry.getKey(), entry.getValue(), grafanaUser, grafanaPass);
         }
 
-        log.info("Dashboard provisioning complete for team='{}' panels='{}'.", team, panelsVersion);
+        log.info("Dashboard provisioning complete for team='{}' panels='{}'.",
+                team, envConfig.getPanels().get("version"));
     }
 
     private void deployServiceGroup(String team, String teamFolderUid, String sgName,
                                      EnvConfig.ServiceGroupConfig sg,
-                                     String panelsVersion,
                                      String grafanaUser, String grafanaPass) throws Exception {
         validateUidSafe(sgName,               "service_group key '" + sgName + "'");
         validateUidSafe(sg.getCmdbReference(), "cmdb_reference");
@@ -106,30 +110,34 @@ public class DashboardDeployRunner implements ApplicationRunner, ExitCodeGenerat
         String appSelectorJsonEscaped = appSelector.replace("\"", "\\\"");
 
         log.info("Deploying service_group='{}' cmdbReference='{}' opEnvironment='{}' panels='{}'",
-                sgName, cmdbRef, sg.getOpEnvironment(), panelsVersion);
+                sgName, cmdbRef, sg.getOpEnvironment(), envConfig.getPanels().get("version"));
 
         GrafanaClient client = new GrafanaClient(sg.getGrafanaUrl(), resolveToken(sg), grafanaUser, grafanaPass);
         client.ensureFolder(sgFolderUid,   sgName,  teamFolderUid);
         client.ensureFolder(cmdbFolderUid, cmdbRef, sgFolderUid);
 
-        Map<String, Object> model = new HashMap<>();
-        model.put("folder_uid",     cmdbFolderUid);
-        model.put("team",           team);
-        model.put("team_tag",       team.toLowerCase().replaceAll("[^a-z0-9]+", "-"));
-        model.put("service_group",  sgName);
-        model.put("cmdb_ref",       cmdbRef);
-        model.put("app_selector",   appSelectorJsonEscaped);
-        model.put("mimir_uid",      sg.getDatasources().getMimir());
-        model.put("loki_uid",       sg.getDatasources().getLoki());
-        model.put("tempo_uid",      sg.getDatasources().getTempo());
-        model.put("thresholds",     sg.getThresholds());
-        model.put("panels_version", panelsVersion);
+        Map<String, String> pv = new HashMap<>();
+        pv.put("version", envConfig.getPanels().getOrDefault("version", "unknown"));
+        for (String name : PANEL_NAMES) {
+            pv.put(name, envConfig.resolvePanelVersion(name));
+        }
 
-        String deployMessage = String.format("panels-%s dashboards-%s", panelsVersion, appVersion);
+        Map<String, Object> model = new HashMap<>();
+        model.put("folder_uid",    cmdbFolderUid);
+        model.put("team",          team);
+        model.put("team_tag",      team.toLowerCase().replaceAll("[^a-z0-9]+", "-"));
+        model.put("service_group", sgName);
+        model.put("cmdb_ref",      cmdbRef);
+        model.put("app_selector",  appSelectorJsonEscaped);
+        model.put("mimir_uid",     sg.getDatasources().getMimir());
+        model.put("loki_uid",      sg.getDatasources().getLoki());
+        model.put("tempo_uid",     sg.getDatasources().getTempo());
+        model.put("thresholds",    sg.getThresholds());
+        model.put("pv",            pv);
 
         for (String templateName : DASHBOARD_TEMPLATES) {
             String json = renderTemplate(templateName, model);
-            client.upsertDashboard(cmdbFolderUid, json, deployMessage);
+            client.upsertDashboard(cmdbFolderUid, json);
         }
     }
 

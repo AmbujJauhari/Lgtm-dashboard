@@ -9,6 +9,9 @@ import java.util.Map;
  * Typed binding for a per-environment config file (e.g. config/qa.yaml).
  *
  * YAML shape:
+ *   panels:
+ *     version: v1          # default version for all panels
+ *     rm: v2               # optional per-panel override; falls back to panels.version if absent
  *   team: CollOps
  *   service_groups:
  *     app:
@@ -27,8 +30,18 @@ import java.util.Map;
 @ConfigurationProperties
 public class EnvConfig {
 
+    private Map<String, String> panels = new HashMap<>();
     private String team;
     private Map<String, ServiceGroupConfig> serviceGroups = new HashMap<>();
+
+    public Map<String, String> getPanels() { return panels; }
+    public void setPanels(Map<String, String> panels) { this.panels = panels; }
+
+    /** Returns the version for a specific panel, falling back to panels.version. */
+    public String resolvePanelVersion(String panelName) {
+        if (panels.containsKey(panelName)) return panels.get(panelName);
+        return panels.getOrDefault("version", "unknown");
+    }
 
     public String getTeam() { return team; }
     public void setTeam(String team) { this.team = team; }

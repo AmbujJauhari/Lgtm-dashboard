@@ -109,14 +109,17 @@ promote-dashboards-prod:
   environment: production
 
 # ── Emergency rollback ────────────────────────────────────────────────────────
-# Set ROLLBACK_SERVICE_GROUP and ROLLBACK_DEPLOYER_VERSION as pipeline variables before triggering.
-# ROLLBACK_DEPLOYER_VERSION is the dashboards JAR version (e.g. 9.0.0) to roll back to.
+# Panels are always forward-moving and are never rolled back.
+# To roll back dashboards, set ROLLBACK_VERSION (e.g. 9.8.6) and trigger this job.
+# The job downloads that exact dashboards JAR from Nexus and re-deploys it.
+# Panel UIDs referenced by that JAR version were deployed previously and still exist in Grafana.
 
 rollback-dashboards-prod:
-  <<: *deploy-dashboards
   stage: promote-prod
-  needs: [build-dashboards]
+  image: maven:3.9-eclipse-temurin-21
   when: manual
+  only: [main]
   script:
-    - java -jar dashboards/target/dashboards-*.jar rollback --config=config/prod.yaml --service-group=$ROLLBACK_SERVICE_GROUP --deployer-version=$ROLLBACK_DEPLOYER_VERSION
+    - mvn dependency:copy -Dartifact=com.collops:dashboards:${ROLLBACK_VERSION}:jar -DoutputDirectory=. -q
+    - java -jar dashboards-${ROLLBACK_VERSION}.jar deploy --config=config/prod.yaml
   environment: production

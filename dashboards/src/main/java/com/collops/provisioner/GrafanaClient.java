@@ -65,11 +65,7 @@ public class GrafanaClient {
         return uid;
     }
 
-    /**
-     * Upsert a dashboard. The deployer version is recorded in the Grafana version history
-     * message and in the dashboard tags so every Grafana version maps back to the deployer.
-     */
-    public void upsertDashboard(String folderUid, String dashboardJson, String deployMessage) throws Exception {
+    public void upsertDashboard(String folderUid, String dashboardJson) throws Exception {
         JsonNode dash = mapper.readTree(dashboardJson);
         String title = dash.path("title").asText("<unknown>");
 
@@ -77,7 +73,6 @@ public class GrafanaClient {
         wrapper.set("dashboard", dash);
         wrapper.put("folderUid", folderUid);
         wrapper.put("overwrite", true);
-        wrapper.put("message", deployMessage);
 
         HttpRequest post = request("POST", "/api/dashboards/db", mapper.writeValueAsString(wrapper));
         HttpResponse<String> res = http.send(post, HttpResponse.BodyHandlers.ofString());
@@ -86,58 +81,6 @@ public class GrafanaClient {
         }
 
         log.info("Upserted dashboard '{}'", title);
-    }
-
-    public int resolveDashboardId(String uid) throws Exception {
-        HttpRequest get = request("GET", "/api/dashboards/uid/" + uid, null);
-        HttpResponse<String> res = http.send(get, HttpResponse.BodyHandlers.ofString());
-        if (res.statusCode() == 404) return -1;
-        if (res.statusCode() != 200) throw new GrafanaException(res.statusCode(), res.body());
-        return mapper.readTree(res.body()).path("dashboard").path("id").asInt(-1);
-    }
-
-    /**
-     * Scans the version history of a dashboard and returns the Grafana version number whose
-     * message field contains "dashboards-{deployerVersion}". Returns -1 if not found.
-     */
-    public int findGrafanaVersionForDeployer(int dashboardId, String deployerVersion) throws Exception {
-        String marker = "dashboards-" + deployerVersion;
-        int limit = 100;
-        int start = 0;
-
-        while (true) {
-            HttpRequest get = request("GET",
-                    "/api/dashboards/id/" + dashboardId + "/versions?limit=" + limit + "&start=" + start,
-                    null);
-            HttpResponse<String> res = http.send(get, HttpResponse.BodyHandlers.ofString());
-            if (res.statusCode() != 200) throw new GrafanaException(res.statusCode(), res.body());
-
-            JsonNode versions = mapper.readTree(res.body());
-            if (!versions.isArray() || versions.isEmpty()) break;
-
-            for (JsonNode v : versions) {
-                String message = v.path("message").asText("");
-                if (message.contains(marker)) {
-                    return v.path("version").asInt(-1);
-                }
-            }
-
-            if (versions.size() < limit) break;
-            start += limit;
-        }
-
-        return -1;
-    }
-
-    public void rollback(int dashboardId, int version) throws Exception {
-        ObjectNode body = mapper.createObjectNode();
-        body.put("version", version);
-        HttpRequest post = request("POST",
-                "/api/dashboards/id/" + dashboardId + "/restore",
-                mapper.writeValueAsString(body));
-        HttpResponse<String> res = http.send(post, HttpResponse.BodyHandlers.ofString());
-        if (res.statusCode() != 200) throw new GrafanaException(res.statusCode(), res.body());
-        log.info("Rolled back dashboard id={} to version {}", dashboardId, version);
     }
 
     private HttpRequest request(String method, String path, String jsonBody) {
