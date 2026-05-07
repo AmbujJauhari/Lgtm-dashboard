@@ -1,0 +1,22 @@
+panels_version: v1
+team: CollOps
+
+# To look up datasource UIDs: curl http://localhost:3001/api/datasources -u admin:admin | jq '.[] | {name,uid}'
+# grafana/otel-lgtm provisions these datasource UIDs by default.
+x-grafana: &grafana
+  grafana_url: http://lgtm:3000
+  grafana_token_env: GRAFANA_TOKEN_LOCAL
+  datasources:
+    mimir: prometheus
+    loki: loki
+    tempo: tempo
+
+service_groups:
+  app:
+    <<: *grafana
+    cmdb_reference: APP-LOCAL
+    op_environment: LOCAL
+    thresholds:
+      error_rate_warning: 0.05
+      error_rate_critical: 0.10
+      latency_p99_ms: 500

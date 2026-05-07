@@ -1,0 +1,12 @@
+panel_version: v1
+folder_uid: firm-library-panels
+folder_title: Firm Library Panels
+
+grafana_instances:
+  - name: uat
+    url: https://grafana.uat.internal
+    token_env: GRAFANA_TOKEN_UAT
+    datasources:
+      mimir: REPLACE_WITH_UAT_MIMIR_UID
+      loki: REPLACE_WITH_UAT_LOKI_UID
+      tempo: REPLACE_WITH_UAT_TEMPO_UID

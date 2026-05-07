@@ -30,21 +30,31 @@ services:
       - lgtm
     restart: unless-stopped
 
-  provisioner:
+  panels:
     build:
-      context: ./provisioner-java
+      context: ./panels
       dockerfile: Dockerfile
-    container_name: collops-provisioner
-    working_dir: /workspace
-    volumes:
-      - .:/workspace   # mount repo root — provisioner reads templates/library_panels/config from here
+    container_name: collops-panels
     networks:
       - lgtm
     depends_on:
       lgtm:
         condition: service_healthy
     profiles:
-      - tools           # not started by `docker compose up -d`; use `docker compose run`
+      - tools   # not started by `docker compose up -d`; use `docker compose run --rm panels deploy`
+
+  dashboards:
+    build:
+      context: ./dashboards
+      dockerfile: Dockerfile
+    container_name: collops-dashboards
+    networks:
+      - lgtm
+    depends_on:
+      lgtm:
+        condition: service_healthy
+    profiles:
+      - tools   # not started by `docker compose up -d`; use `docker compose run --rm dashboards deploy`
 
   test-data-generator:
     build:

@@ -4,68 +4,119 @@ stages:
   - promote-uat
   - promote-prod
 
-# Build the fat JAR once; all subsequent stages reuse the artifact.
-build-provisioner:
+# ── Build ─────────────────────────────────────────────────────────────────────
+
+build-panels:
   stage: build
   image: maven:3.9-eclipse-temurin-21
   script:
-    - cd provisioner-java && mvn package -q -DskipTests
+    - cd panels && mvn package -q -DskipTests
   artifacts:
     paths:
-      - provisioner-java/target/provisioner-*.jar
+      - panels/target/panels-*.jar
     expire_in: 1 hour
   only:
     - main
 
-# Helper: run the provisioner JAR from the repo root so it can find library_panels/ and config/.
-.deploy: &deploy
+build-dashboards:
+  stage: build
+  image: maven:3.9-eclipse-temurin-21
+  script:
+    - cd dashboards && mvn package -q -DskipTests
+  artifacts:
+    paths:
+      - dashboards/target/dashboards-*.jar
+    expire_in: 1 hour
+  only:
+    - main
+
+# ── Deploy helpers ────────────────────────────────────────────────────────────
+
+.deploy-panels: &deploy-panels
   image: eclipse-temurin:21-jre-alpine
-  needs: [build-provisioner]
+  needs: [build-panels]
   only: [main]
 
-# Auto-deploys to QA on every push to main.
-# Requires GRAFANA_TOKEN_QA to be set as a masked CI variable.
-deploy-qa:
-  <<: *deploy
+.deploy-dashboards: &deploy-dashboards
+  image: eclipse-temurin:21-jre-alpine
+  # Panels must be deployed first so the library panels exist when dashboards reference them.
+  needs: [build-dashboards]
+  only: [main]
+
+# ── QA (auto on push to main) ─────────────────────────────────────────────────
+
+deploy-panels-qa:
+  <<: *deploy-panels
   stage: deploy-qa
   when: on_success
   script:
-    - java -jar provisioner-java/target/provisioner-*.jar deploy --config=config/qa.yaml
+    - java -jar panels/target/panels-*.jar deploy --config=config/qa.yaml
   environment: qa
 
-# Manual promote to UAT.
-# Requires GRAFANA_TOKEN_UAT to be set as a masked CI variable.
-promote-uat:
-  <<: *deploy
+deploy-dashboards-qa:
+  <<: *deploy-dashboards
+  stage: deploy-qa
+  when: on_success
+  needs: [build-dashboards, deploy-panels-qa]
+  script:
+    - java -jar dashboards/target/dashboards-*.jar deploy --config=config/qa.yaml
+  environment: qa
+
+# ── UAT (manual promote) ──────────────────────────────────────────────────────
+
+promote-panels-uat:
+  <<: *deploy-panels
   stage: promote-uat
   when: manual
   script:
-    - java -jar provisioner-java/target/provisioner-*.jar deploy --config=config/uat.yaml
+    - java -jar panels/target/panels-*.jar deploy --config=config/uat.yaml
   environment: uat
 
-# Manual promote to prod. Optional dependency on UAT — safe to run independently.
-# Requires GRAFANA_TOKEN_PROD to be set as a masked CI variable.
-promote-prod:
-  <<: *deploy
+promote-dashboards-uat:
+  <<: *deploy-dashboards
+  stage: promote-uat
+  when: manual
+  needs: [build-dashboards, promote-panels-uat]
+  script:
+    - java -jar dashboards/target/dashboards-*.jar deploy --config=config/uat.yaml
+  environment: uat
+
+# ── Prod (manual promote) ─────────────────────────────────────────────────────
+
+promote-panels-prod:
+  <<: *deploy-panels
   stage: promote-prod
   needs:
-    - build-provisioner
-    - job: promote-uat
+    - build-panels
+    - job: promote-panels-uat
       optional: true
   when: manual
   script:
-    - java -jar provisioner-java/target/provisioner-*.jar deploy --config=config/prod.yaml
+    - java -jar panels/target/panels-*.jar deploy --config=config/prod.yaml
   environment: production
 
-# Emergency rollback for prod. Set ROLLBACK_SERVICE_GROUP and ROLLBACK_VERSION as
-# pipeline variables before triggering.
-# To list available versions: GET /api/dashboards/uid/{uid}/versions
-# Requires GRAFANA_TOKEN_PROD to be set as a masked CI variable.
-rollback-prod:
-  <<: *deploy
+promote-dashboards-prod:
+  <<: *deploy-dashboards
   stage: promote-prod
-  needs: [build-provisioner]
+  needs:
+    - build-dashboards
+    - promote-panels-prod
+    - job: promote-dashboards-uat
+      optional: true
   when: manual
   script:
-    - java -jar provisioner-java/target/provisioner-*.jar rollback --config=config/prod.yaml --service-group=$ROLLBACK_SERVICE_GROUP --version=$ROLLBACK_VERSION
+    - java -jar dashboards/target/dashboards-*.jar deploy --config=config/prod.yaml
+  environment: production
+
+# ── Emergency rollback ────────────────────────────────────────────────────────
+# Set ROLLBACK_SERVICE_GROUP and ROLLBACK_VERSION as pipeline variables before triggering.
+# To list available versions: GET /api/dashboards/uid/{uid}/versions
+
+rollback-dashboards-prod:
+  <<: *deploy-dashboards
+  stage: promote-prod
+  needs: [build-dashboards]
+  when: manual
+  script:
+    - java -jar dashboards/target/dashboards-*.jar rollback --config=config/prod.yaml --service-group=$ROLLBACK_SERVICE_GROUP --version=$ROLLBACK_VERSION
   environment: production

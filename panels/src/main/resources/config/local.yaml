@@ -1,0 +1,13 @@
+panel_version: v1
+folder_uid: firm-library-panels
+folder_title: Firm Library Panels
+
+# grafana/otel-lgtm provisions these datasource UIDs by default.
+grafana_instances:
+  - name: local
+    url: http://lgtm:3000
+    token_env: GRAFANA_TOKEN_LOCAL
+    datasources:
+      mimir: prometheus
+      loki: loki
+      tempo: tempo
