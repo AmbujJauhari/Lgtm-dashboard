@@ -6,11 +6,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Typed binding for a per-environment config file (e.g. config/qa.yaml),
- * loaded via spring.config.import set in ProvisionerApplication.main().
+ * Typed binding for a per-environment config file (e.g. config/qa.yaml).
  *
  * YAML shape:
- *   panels_version: v1
  *   team: CollOps
  *   service_groups:
  *     app:
@@ -29,12 +27,8 @@ import java.util.Map;
 @ConfigurationProperties
 public class EnvConfig {
 
-    private String panelsVersion;
     private String team;
     private Map<String, ServiceGroupConfig> serviceGroups = new HashMap<>();
-
-    public String getPanelsVersion() { return panelsVersion; }
-    public void setPanelsVersion(String panelsVersion) { this.panelsVersion = panelsVersion; }
 
     public String getTeam() { return team; }
     public void setTeam(String team) { this.team = team; }

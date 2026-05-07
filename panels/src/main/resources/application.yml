@@ -3,6 +3,10 @@ spring:
     web-application-type: none
     banner-mode: off
 
+# @project.version@ is replaced by Maven resource filtering at build time.
+app:
+  version: "@project.version@"
+
 logging:
   level:
     root: WARN

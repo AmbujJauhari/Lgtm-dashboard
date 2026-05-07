@@ -109,8 +109,8 @@ promote-dashboards-prod:
   environment: production
 
 # ── Emergency rollback ────────────────────────────────────────────────────────
-# Set ROLLBACK_SERVICE_GROUP and ROLLBACK_VERSION as pipeline variables before triggering.
-# To list available versions: GET /api/dashboards/uid/{uid}/versions
+# Set ROLLBACK_SERVICE_GROUP and ROLLBACK_DEPLOYER_VERSION as pipeline variables before triggering.
+# ROLLBACK_DEPLOYER_VERSION is the dashboards JAR version (e.g. 9.0.0) to roll back to.
 
 rollback-dashboards-prod:
   <<: *deploy-dashboards
@@ -118,5 +118,5 @@ rollback-dashboards-prod:
   needs: [build-dashboards]
   when: manual
   script:
-    - java -jar dashboards/target/dashboards-*.jar rollback --config=config/prod.yaml --service-group=$ROLLBACK_SERVICE_GROUP --version=$ROLLBACK_VERSION
+    - java -jar dashboards/target/dashboards-*.jar rollback --config=config/prod.yaml --service-group=$ROLLBACK_SERVICE_GROUP --deployer-version=$ROLLBACK_DEPLOYER_VERSION
   environment: production

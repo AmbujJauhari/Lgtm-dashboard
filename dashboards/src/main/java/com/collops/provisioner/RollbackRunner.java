@@ -15,12 +15,12 @@ import java.util.List;
  * Entry point for the `rollback` command.
  *
  * Usage:
- *   java -jar dashboards.jar rollback --config=config/prod.yaml --service-group=app --version=3
+ *   java -jar dashboards.jar rollback --config=config/prod.yaml --service-group=app --deployer-version=9.0.0
  *
- * Reverts all three dashboards (overview, service_overview, investigation) for the given
- * service group to the specified Grafana version number.
- *
- * To list available versions: GET /api/dashboards/uid/{uid}/versions
+ * Reverts ALL three dashboards (overview, service_overview, investigation) for the given service
+ * group to the Grafana version that was stamped by the specified deployer JAR version. The lookup
+ * matches the "dashboards-{deployerVersion}" token in each dashboard's Grafana version history
+ * message. All dashboards are rolled back regardless of whether they individually changed.
  */
 @Component
 @Order(2)
@@ -51,18 +51,9 @@ public class RollbackRunner implements ApplicationRunner, ExitCodeGenerator {
             return;
         }
 
-        String serviceGroup = requiredOption(args, "service-group");
-        String verStr       = requiredOption(args, "version");
-        if (serviceGroup == null || verStr == null) {
-            exitCode = 1;
-            return;
-        }
-
-        int version;
-        try {
-            version = Integer.parseInt(verStr);
-        } catch (NumberFormatException e) {
-            System.err.println("--version must be an integer, got: " + verStr);
+        String serviceGroup    = requiredOption(args, "service-group");
+        String deployerVersion = requiredOption(args, "deployer-version");
+        if (serviceGroup == null || deployerVersion == null) {
             exitCode = 1;
             return;
         }
@@ -87,19 +78,31 @@ public class RollbackRunner implements ApplicationRunner, ExitCodeGenerator {
 
         GrafanaClient client = new GrafanaClient(sg.getGrafanaUrl(), token, grafanaUser, grafanaPass);
 
-        log.info("Rolling back service_group='{}' cmdbReference='{}' to Grafana version {}",
-                serviceGroup, cmdbRef, version);
+        log.info("Rolling back service_group='{}' cmdbReference='{}' to deployer version '{}'",
+                serviceGroup, cmdbRef, deployerVersion);
 
+        boolean anyFailed = false;
         for (String uid : dashboardUids) {
             int id = client.resolveDashboardId(uid);
             if (id == -1) {
                 log.warn("Dashboard '{}' not found, skipping", uid);
                 continue;
             }
-            client.rollback(id, version);
+            int grafanaVersion = client.findGrafanaVersionForDeployer(id, deployerVersion);
+            if (grafanaVersion == -1) {
+                log.warn("No Grafana version found for dashboard '{}' deployed by '{}'", uid, deployerVersion);
+                anyFailed = true;
+                continue;
+            }
+            client.rollback(id, grafanaVersion);
         }
 
-        log.info("Rollback complete.");
+        if (anyFailed) {
+            System.err.println("Rollback completed with warnings — some dashboards had no matching version.");
+            exitCode = 1;
+        } else {
+            log.info("Rollback complete.");
+        }
     }
 
     private String requiredOption(ApplicationArguments args, String name) {

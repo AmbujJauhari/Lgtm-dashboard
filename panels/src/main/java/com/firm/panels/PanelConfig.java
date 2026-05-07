@@ -7,13 +7,9 @@ import java.util.List;
 @ConfigurationProperties
 public class PanelConfig {
 
-    private String panelVersion;
     private String folderUid = "firm-library-panels";
     private String folderTitle = "Firm Library Panels";
     private List<GrafanaInstance> grafanaInstances;
-
-    public String getPanelVersion() { return panelVersion; }
-    public void setPanelVersion(String panelVersion) { this.panelVersion = panelVersion; }
 
     public String getFolderUid() { return folderUid; }
     public void setFolderUid(String folderUid) { this.folderUid = folderUid; }

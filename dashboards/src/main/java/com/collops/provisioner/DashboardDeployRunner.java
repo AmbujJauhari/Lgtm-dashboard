@@ -58,16 +58,11 @@ public class DashboardDeployRunner implements ApplicationRunner, ExitCodeGenerat
         }
 
         String team          = envConfig.getTeam();
-        String panelsVersion = envConfig.getPanelsVersion();
+        String panelsVersion = appVersion;
         Map<String, EnvConfig.ServiceGroupConfig> serviceGroups = envConfig.getServiceGroups();
 
         if (team == null) {
             System.err.println("Config file must declare 'team' at the top level.");
-            exitCode = 1;
-            return;
-        }
-        if (panelsVersion == null || panelsVersion.isBlank()) {
-            System.err.println("Config file must declare 'panels_version'.");
             exitCode = 1;
             return;
         }

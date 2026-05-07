@@ -96,6 +96,39 @@ public class GrafanaClient {
         return mapper.readTree(res.body()).path("dashboard").path("id").asInt(-1);
     }
 
+    /**
+     * Scans the version history of a dashboard and returns the Grafana version number whose
+     * message field contains "dashboards-{deployerVersion}". Returns -1 if not found.
+     */
+    public int findGrafanaVersionForDeployer(int dashboardId, String deployerVersion) throws Exception {
+        String marker = "dashboards-" + deployerVersion;
+        int limit = 100;
+        int start = 0;
+
+        while (true) {
+            HttpRequest get = request("GET",
+                    "/api/dashboards/id/" + dashboardId + "/versions?limit=" + limit + "&start=" + start,
+                    null);
+            HttpResponse<String> res = http.send(get, HttpResponse.BodyHandlers.ofString());
+            if (res.statusCode() != 200) throw new GrafanaException(res.statusCode(), res.body());
+
+            JsonNode versions = mapper.readTree(res.body());
+            if (!versions.isArray() || versions.isEmpty()) break;
+
+            for (JsonNode v : versions) {
+                String message = v.path("message").asText("");
+                if (message.contains(marker)) {
+                    return v.path("version").asInt(-1);
+                }
+            }
+
+            if (versions.size() < limit) break;
+            start += limit;
+        }
+
+        return -1;
+    }
+
     public void rollback(int dashboardId, int version) throws Exception {
         ObjectNode body = mapper.createObjectNode();
         body.put("version", version);
