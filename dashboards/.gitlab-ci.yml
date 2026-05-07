@@ -1,0 +1,109 @@
+# CollOps dashboards — build and deploy to Grafana.
+#
+# Panels must already be deployed before dashboards run (the library panels
+# referenced by dashboards need to exist in Grafana first).
+#
+# Rollback: set ROLLBACK_VERSION (e.g. 9.8.6) and trigger rollback-dashboards-prod.
+# That version's JAR is pulled from Nexus and re-deployed — no special command needed.
+# Panels for that version already exist in Grafana (panels are never removed).
+#
+# Required CI/CD variables (set in GitLab project settings):
+#   NEXUS_URL          e.g. https://nexus.firm.internal  (for rollback JAR download)
+#   GRAFANA_TOKEN_QA   Grafana service account token for QA
+#   GRAFANA_TOKEN_UAT  Grafana service account token for UAT
+#   GRAFANA_TOKEN_PROD Grafana service account token for prod
+#
+# NOTE: when this file is moved to its own repo, remove the "cd dashboards &&" prefix
+# from every script line — the repo root will be the dashboards module root.
+
+stages:
+  - build
+  - deploy-qa
+  - promote-uat
+  - promote-prod
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+
+# ── Shared config ─────────────────────────────────────────────────────────────
+
+.maven:
+  image: maven:3.9-eclipse-temurin-21
+  cache:
+    key: dashboards-maven-$CI_COMMIT_REF_SLUG
+    paths:
+      - .m2/repository
+
+.jre:
+  image: eclipse-temurin:21-jre-alpine
+
+# ── Build (all branches and MRs) ──────────────────────────────────────────────
+
+build:
+  extends: .maven
+  stage: build
+  script:
+    - cd dashboards && mvn package -q -DskipTests
+  artifacts:
+    paths:
+      - dashboards/target/dashboards-*.jar
+    expire_in: 1 hour
+
+# ── Deploy to QA (auto on main) ───────────────────────────────────────────────
+
+deploy-dashboards-qa:
+  extends: .jre
+  stage: deploy-qa
+  needs: [build]
+  only:
+    - main
+  script:
+    - java -jar dashboards/target/dashboards-*.jar deploy --config=config/qa.yaml
+  environment: qa
+
+# ── Promote to UAT (manual) ───────────────────────────────────────────────────
+
+promote-dashboards-uat:
+  extends: .jre
+  stage: promote-uat
+  needs: [build]
+  when: manual
+  only:
+    - main
+  script:
+    - java -jar dashboards/target/dashboards-*.jar deploy --config=config/uat.yaml
+  environment: uat
+
+# ── Promote to prod (manual) ──────────────────────────────────────────────────
+
+promote-dashboards-prod:
+  extends: .jre
+  stage: promote-prod
+  needs:
+    - build
+    - job: promote-dashboards-uat
+      optional: true
+  when: manual
+  only:
+    - main
+  script:
+    - java -jar dashboards/target/dashboards-*.jar deploy --config=config/prod.yaml
+  environment: production
+
+# ── Emergency rollback (manual) ───────────────────────────────────────────────
+# Set ROLLBACK_VERSION (e.g. 9.8.6) as a pipeline variable before triggering.
+
+rollback-dashboards-prod:
+  extends: .maven
+  stage: promote-prod
+  when: manual
+  only:
+    - main
+  script:
+    - mvn dependency:copy
+        -Dartifact=com.collops:dashboards:${ROLLBACK_VERSION}:jar
+        -DoutputDirectory=.
+        -Dnexus.url=$NEXUS_URL
+        -q
+    - java -jar dashboards-${ROLLBACK_VERSION}.jar deploy --config=config/prod.yaml
+  environment: production

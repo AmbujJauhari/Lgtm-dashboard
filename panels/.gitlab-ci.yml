@@ -1,0 +1,117 @@
+# Firm-wide library panels — build, publish to Nexus, deploy to Grafana.
+#
+# Version strategy: major.minor come from pom.xml; patch is $CI_PIPELINE_IID,
+# which auto-increments with every pipeline run on main. No pom.xml commits needed.
+# Bump major or minor manually in pom.xml when making a breaking or significant change.
+#
+# Required CI/CD variables (set in GitLab project settings):
+#   NEXUS_URL          e.g. https://nexus.firm.internal
+#   NEXUS_USER         Nexus deploy user
+#   NEXUS_PASSWORD     Nexus deploy password
+#   GRAFANA_TOKEN_QA   Grafana service account token for QA
+#   GRAFANA_TOKEN_UAT  Grafana service account token for UAT
+#   GRAFANA_TOKEN_PROD Grafana service account token for prod
+#
+# NOTE: when this file is moved to its own repo, remove the "cd panels &&" prefix
+# from every script line — the repo root will be the panels module root.
+
+stages:
+  - build
+  - publish
+  - deploy-qa
+  - promote-uat
+  - promote-prod
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+
+# ── Shared config ─────────────────────────────────────────────────────────────
+
+.maven:
+  image: maven:3.9-eclipse-temurin-21
+  cache:
+    key: panels-maven-$CI_COMMIT_REF_SLUG
+    paths:
+      - .m2/repository
+
+.jre:
+  image: eclipse-temurin:21-jre-alpine
+
+# ── Build (all branches and MRs) ──────────────────────────────────────────────
+
+build:
+  extends: .maven
+  stage: build
+  script:
+    - cd panels && mvn package -q -DskipTests
+  artifacts:
+    paths:
+      - panels/target/panels-*.jar
+    expire_in: 1 hour
+
+# ── Publish to Nexus (main only, auto) ────────────────────────────────────────
+# Derives the release version as major.minor.$CI_PIPELINE_IID so every pipeline
+# on main produces a unique, traceable artifact without any pom.xml commit.
+
+publish:
+  extends: .maven
+  stage: publish
+  only:
+    - main
+  script:
+    - cd panels
+    - BASE=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//')
+    - MAJOR=$(echo $BASE | cut -d. -f1)
+    - MINOR=$(echo $BASE | cut -d. -f2)
+    - VERSION="$MAJOR.$MINOR.$CI_PIPELINE_IID"
+    - echo "Releasing panels $VERSION"
+    - mvn versions:set -DnewVersion=$VERSION -q
+    - mvn deploy -q -DskipTests -s ci-maven-settings.xml -Dnexus.url=$NEXUS_URL
+    - echo "PANELS_VERSION=$VERSION" > ../panels-version.env
+  artifacts:
+    reports:
+      dotenv: panels-version.env
+    paths:
+      - panels/target/panels-*.jar
+    expire_in: 1 hour
+
+# ── Deploy to QA (auto after publish) ────────────────────────────────────────
+
+deploy-panels-qa:
+  extends: .jre
+  stage: deploy-qa
+  needs: [publish]
+  only:
+    - main
+  script:
+    - java -jar panels/target/panels-*.jar deploy --config=config/qa.yaml
+  environment: qa
+
+# ── Promote to UAT (manual) ───────────────────────────────────────────────────
+
+promote-panels-uat:
+  extends: .jre
+  stage: promote-uat
+  needs: [publish]
+  when: manual
+  only:
+    - main
+  script:
+    - java -jar panels/target/panels-*.jar deploy --config=config/uat.yaml
+  environment: uat
+
+# ── Promote to prod (manual) ──────────────────────────────────────────────────
+
+promote-panels-prod:
+  extends: .jre
+  stage: promote-prod
+  needs:
+    - publish
+    - job: promote-panels-uat
+      optional: true
+  when: manual
+  only:
+    - main
+  script:
+    - java -jar panels/target/panels-*.jar deploy --config=config/prod.yaml
+  environment: production

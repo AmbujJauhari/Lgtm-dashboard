@@ -1,125 +1,25 @@
+# Root CI — delegates to each module's own pipeline based on which files changed.
+# This thin wrapper exists only while panels and dashboards share a mono-repo.
+# When panels is extracted to its own repo, panels/.gitlab-ci.yml becomes its root CI.
+# When dashboards is extracted, dashboards/.gitlab-ci.yml becomes its root CI.
+
 stages:
-  - build
-  - deploy-qa
-  - promote-uat
-  - promote-prod
+  - trigger
 
-# ── Build ─────────────────────────────────────────────────────────────────────
+panels:
+  stage: trigger
+  trigger:
+    include: panels/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - changes:
+        - panels/**/*
 
-build-panels:
-  stage: build
-  image: maven:3.9-eclipse-temurin-21
-  script:
-    - cd panels && mvn package -q -DskipTests
-  artifacts:
-    paths:
-      - panels/target/panels-*.jar
-    expire_in: 1 hour
-  only:
-    - main
-
-build-dashboards:
-  stage: build
-  image: maven:3.9-eclipse-temurin-21
-  script:
-    - cd dashboards && mvn package -q -DskipTests
-  artifacts:
-    paths:
-      - dashboards/target/dashboards-*.jar
-    expire_in: 1 hour
-  only:
-    - main
-
-# ── Deploy helpers ────────────────────────────────────────────────────────────
-
-.deploy-panels: &deploy-panels
-  image: eclipse-temurin:21-jre-alpine
-  needs: [build-panels]
-  only: [main]
-
-.deploy-dashboards: &deploy-dashboards
-  image: eclipse-temurin:21-jre-alpine
-  # Panels must be deployed first so the library panels exist when dashboards reference them.
-  needs: [build-dashboards]
-  only: [main]
-
-# ── QA (auto on push to main) ─────────────────────────────────────────────────
-
-deploy-panels-qa:
-  <<: *deploy-panels
-  stage: deploy-qa
-  when: on_success
-  script:
-    - java -jar panels/target/panels-*.jar deploy --config=config/qa.yaml
-  environment: qa
-
-deploy-dashboards-qa:
-  <<: *deploy-dashboards
-  stage: deploy-qa
-  when: on_success
-  needs: [build-dashboards, deploy-panels-qa]
-  script:
-    - java -jar dashboards/target/dashboards-*.jar deploy --config=config/qa.yaml
-  environment: qa
-
-# ── UAT (manual promote) ──────────────────────────────────────────────────────
-
-promote-panels-uat:
-  <<: *deploy-panels
-  stage: promote-uat
-  when: manual
-  script:
-    - java -jar panels/target/panels-*.jar deploy --config=config/uat.yaml
-  environment: uat
-
-promote-dashboards-uat:
-  <<: *deploy-dashboards
-  stage: promote-uat
-  when: manual
-  needs: [build-dashboards, promote-panels-uat]
-  script:
-    - java -jar dashboards/target/dashboards-*.jar deploy --config=config/uat.yaml
-  environment: uat
-
-# ── Prod (manual promote) ─────────────────────────────────────────────────────
-
-promote-panels-prod:
-  <<: *deploy-panels
-  stage: promote-prod
-  needs:
-    - build-panels
-    - job: promote-panels-uat
-      optional: true
-  when: manual
-  script:
-    - java -jar panels/target/panels-*.jar deploy --config=config/prod.yaml
-  environment: production
-
-promote-dashboards-prod:
-  <<: *deploy-dashboards
-  stage: promote-prod
-  needs:
-    - build-dashboards
-    - promote-panels-prod
-    - job: promote-dashboards-uat
-      optional: true
-  when: manual
-  script:
-    - java -jar dashboards/target/dashboards-*.jar deploy --config=config/prod.yaml
-  environment: production
-
-# ── Emergency rollback ────────────────────────────────────────────────────────
-# Panels are always forward-moving and are never rolled back.
-# To roll back dashboards, set ROLLBACK_VERSION (e.g. 9.8.6) and trigger this job.
-# The job downloads that exact dashboards JAR from Nexus and re-deploys it.
-# Panel UIDs referenced by that JAR version were deployed previously and still exist in Grafana.
-
-rollback-dashboards-prod:
-  stage: promote-prod
-  image: maven:3.9-eclipse-temurin-21
-  when: manual
-  only: [main]
-  script:
-    - mvn dependency:copy -Dartifact=com.collops:dashboards:${ROLLBACK_VERSION}:jar -DoutputDirectory=. -q
-    - java -jar dashboards-${ROLLBACK_VERSION}.jar deploy --config=config/prod.yaml
-  environment: production
+dashboards:
+  stage: trigger
+  trigger:
+    include: dashboards/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - changes:
+        - dashboards/**/*
