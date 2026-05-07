@@ -1,23 +1,28 @@
-# Firm-wide library panels — build, publish to Nexus, deploy to Grafana.
+# Firm-wide library panels — build, release to Nexus, deploy to Grafana.
 #
-# Version strategy: major.minor come from pom.xml; patch is $CI_PIPELINE_IID,
-# which auto-increments with every pipeline run on main. No pom.xml commits needed.
-# Bump major or minor manually in pom.xml when making a breaking or significant change.
+# Dev cycle:
+#   - Source always shows version "development-snapshot".
+#   - Local Docker builds deploy panels as "rm-development-snapshot" etc.
+#   - Triggering the manual `release` job on main:
+#       1. Reads existing v{n} git tags, computes next version (v1 → v2 → v3 ...).
+#       2. Replaces "development-snapshot" with the new version in all config files.
+#       3. Builds the JAR and uploads panels-v{n}.jar to Nexus.
+#       4. Creates a git tag v{n} so the next release knows where to start.
+#       5. Deploys panels to QA — Grafana now has rm-v{n}, hh-v{n}, etc.
+#   - UAT and prod deploy are manual promote gates using the same JAR artifact.
 #
 # Required CI/CD variables (set in GitLab project settings):
 #   NEXUS_URL          e.g. https://nexus.firm.internal
 #   NEXUS_USER         Nexus deploy user
 #   NEXUS_PASSWORD     Nexus deploy password
-#   GRAFANA_TOKEN_QA   Grafana service account token for QA
-#   GRAFANA_TOKEN_UAT  Grafana service account token for UAT
-#   GRAFANA_TOKEN_PROD Grafana service account token for prod
+#   GRAFANA_TOKEN_QA / _UAT / _PROD
 #
-# NOTE: when this file is moved to its own repo, remove the "cd panels &&" prefix
-# from every script line — the repo root will be the panels module root.
+# NOTE: when this file moves to its own repo, remove "cd panels &&" from every
+# script line — the repo root will be the panels module root.
 
 stages:
   - build
-  - publish
+  - release
   - deploy-qa
   - promote-uat
   - promote-prod
@@ -37,7 +42,7 @@ variables:
 .jre:
   image: eclipse-temurin:21-jre-alpine
 
-# ── Build (all branches and MRs) ──────────────────────────────────────────────
+# ── Build — compiles development-snapshot on every branch and MR ──────────────
 
 build:
   extends: .maven
@@ -49,50 +54,72 @@ build:
       - panels/target/panels-*.jar
     expire_in: 1 hour
 
-# ── Publish to Nexus (main only, auto) ────────────────────────────────────────
-# Derives the release version as major.minor.$CI_PIPELINE_IID so every pipeline
-# on main produces a unique, traceable artifact without any pom.xml commit.
+# ── Release — manual trigger on main ─────────────────────────────────────────
+# Computes v{n+1} from existing git tags, stamps all config files, builds and
+# uploads to Nexus, then creates the git tag so the counter advances correctly.
 
-publish:
+release:
   extends: .maven
-  stage: publish
+  stage: release
+  when: manual
   only:
     - main
   script:
+    # ── Compute next version from git tags ────────────────────────────────────
+    - git fetch --tags
+    - LATEST=$(git tag -l 'v*' | grep -E '^v[0-9]+$' | sort -t v -k 2 -n | tail -1)
+    - |
+      if [ -z "$LATEST" ]; then
+        NEXT="v1"
+      else
+        N="${LATEST#v}"
+        NEXT="v$((N + 1))"
+      fi
+    - echo "Releasing panels $NEXT"
+
+    # ── Stamp all config files with the release version ───────────────────────
+    - find panels/src/main/resources/config -name '*.yaml'
+        -exec sed -i "s/development-snapshot/$NEXT/g" {} \;
+
+    # ── Set Maven version and deploy to Nexus ─────────────────────────────────
     - cd panels
-    - BASE=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//')
-    - MAJOR=$(echo $BASE | cut -d. -f1)
-    - MINOR=$(echo $BASE | cut -d. -f2)
-    - VERSION="$MAJOR.$MINOR.$CI_PIPELINE_IID"
-    - echo "Releasing panels $VERSION"
-    - mvn versions:set -DnewVersion=$VERSION -q
+    - mvn versions:set -DnewVersion=$NEXT -q
     - mvn deploy -q -DskipTests -s ci-maven-settings.xml -Dnexus.url=$NEXUS_URL
-    - echo "PANELS_VERSION=$VERSION" > ../panels-version.env
+
+    # ── Tag the commit so the next release increments correctly ───────────────
+    - cd ..
+    - git remote set-url origin
+        "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - git tag $NEXT
+    - git push origin $NEXT
+
+    # ── Export version for downstream jobs ────────────────────────────────────
+    - echo "PANELS_VERSION=$NEXT" > panels-version.env
   artifacts:
     reports:
       dotenv: panels-version.env
     paths:
       - panels/target/panels-*.jar
-    expire_in: 1 hour
+    expire_in: 1 week
 
-# ── Deploy to QA (auto after publish) ────────────────────────────────────────
+# ── Deploy to QA — auto after release ────────────────────────────────────────
 
 deploy-panels-qa:
   extends: .jre
   stage: deploy-qa
-  needs: [publish]
+  needs: [release]
   only:
     - main
   script:
     - java -jar panels/target/panels-*.jar deploy --config=config/qa.yaml
   environment: qa
 
-# ── Promote to UAT (manual) ───────────────────────────────────────────────────
+# ── Promote to UAT — manual ───────────────────────────────────────────────────
 
 promote-panels-uat:
   extends: .jre
   stage: promote-uat
-  needs: [publish]
+  needs: [release]
   when: manual
   only:
     - main
@@ -100,13 +127,13 @@ promote-panels-uat:
     - java -jar panels/target/panels-*.jar deploy --config=config/uat.yaml
   environment: uat
 
-# ── Promote to prod (manual) ──────────────────────────────────────────────────
+# ── Promote to prod — manual ──────────────────────────────────────────────────
 
 promote-panels-prod:
   extends: .jre
   stage: promote-prod
   needs:
-    - publish
+    - release
     - job: promote-panels-uat
       optional: true
   when: manual

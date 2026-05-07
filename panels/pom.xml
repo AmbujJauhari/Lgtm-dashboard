@@ -13,7 +13,7 @@
 
     <groupId>com.firm</groupId>
     <artifactId>panels</artifactId>
-    <version>1.0.0</version>
+    <version>development-snapshot</version>
     <packaging>jar</packaging>
     <name>firm-panels</name>
     <description>Firm-wide versioned Grafana library panel deployer</description>
