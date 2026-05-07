@@ -118,6 +118,10 @@ public class PanelDeployRunner implements ApplicationRunner, ExitCodeGenerator {
         if (!uid.isEmpty()) {
             root.put("uid", uid + "-" + version);
         }
+        String name = root.path("name").asText();
+        if (!name.isEmpty()) {
+            root.put("name", name + " (" + version + ")");
+        }
         return mapper.writeValueAsString(root);
     }
 

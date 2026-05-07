@@ -1,7 +1,7 @@
 {
   "uid": "[=cmdb_ref]-ov",
   "title": "[=team] Overview",
-  "description": "Tier 1 — aggregate view for [=cmdb_ref]. Click any service to drill into its component dashboard.",
+  "description": "Tier 1 — aggregate view for [=cmdb_ref]. Click any service to drill into its component dashboard. panels-[=panels_version]",
   "tags": ["[=team_tag]", "aggregate", "tier1", "panels-[=panels_version]"],
   "timezone": "browser",
   "refresh": "30s",

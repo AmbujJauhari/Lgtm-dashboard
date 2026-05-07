@@ -1,7 +1,7 @@
 {
   "uid": "[=cmdb_ref]-inv",
   "title": "[=team] Investigation",
-  "description": "Tier 3 — correlate logs, metrics and traces for any [=team] service ([=cmdb_ref]). Exemplar dots on the metrics panel link to traces in Tempo. TraceId values in the log panel also link to Tempo.",
+  "description": "Tier 3 — correlate logs, metrics and traces for any [=team] service ([=cmdb_ref]). Exemplar dots on the metrics panel link to traces in Tempo. TraceId values in the log panel also link to Tempo. panels-[=panels_version]",
   "tags": ["[=team_tag]", "investigation", "tier3", "panels-[=panels_version]"],
   "timezone": "browser",
   "refresh": "30s",

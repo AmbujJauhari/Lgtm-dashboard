@@ -1,7 +1,7 @@
 {
   "uid": "[=cmdb_ref]-sov",
   "title": "[=team] Service Overview",
-  "description": "Tier 2 — component dashboard for [=cmdb_ref]. Choose a service from the dropdown. JVM and Server rows start collapsed — expand as needed.",
+  "description": "Tier 2 — component dashboard for [=cmdb_ref]. Choose a service from the dropdown. JVM and Server rows start collapsed — expand as needed. panels-[=panels_version]",
   "tags": ["[=team_tag]", "component", "tier2", "panels-[=panels_version]"],
   "timezone": "browser",
   "refresh": "30s",
