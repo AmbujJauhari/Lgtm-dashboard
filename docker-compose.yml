@@ -1,12 +1,10 @@
 # Single grafana/otel-lgtm image bundles Grafana, Loki, Tempo, Prometheus,
 # and the OpenTelemetry Collector — no separate service configs needed.
+# lgtm is intentionally ephemeral: no named volume, so all state is discarded on `docker compose down`.
 
 networks:
   lgtm:
     driver: bridge
-
-volumes:
-  lgtm_data:
 
 services:
 
@@ -23,7 +21,6 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_FEATURE_TOGGLES_ENABLE=nestedFolders
     volumes:
-      - lgtm_data:/data
       - ./otel-collector-config.yaml:/otel-lgtm/otelcol-config.yaml:ro
       - ./loki-config.yaml:/otel-lgtm/loki-config.yaml:ro
     networks:
@@ -35,26 +32,28 @@ services:
       context: ./panels
       dockerfile: Dockerfile
     container_name: collops-panels
+    command: ["deploy"]
     networks:
       - lgtm
     depends_on:
       lgtm:
         condition: service_healthy
-    profiles:
-      - tools   # not started by `docker compose up -d`; use `docker compose run --rm panels deploy`
+    restart: "no"
 
   dashboards:
     build:
       context: ./dashboards
       dockerfile: Dockerfile
     container_name: collops-dashboards
+    command: ["deploy"]
     networks:
       - lgtm
     depends_on:
       lgtm:
         condition: service_healthy
-    profiles:
-      - tools   # not started by `docker compose up -d`; use `docker compose run --rm dashboards deploy`
+      panels:
+        condition: service_completed_successfully
+    restart: "no"
 
   test-data-generator:
     build:
